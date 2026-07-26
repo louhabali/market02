@@ -98,6 +98,16 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        if (profile.getUsername() == null || profile.getUsername().trim().isEmpty()) {
+            throw new BadRequestException("Username cannot be empty");
+        }
+        if (profile.getEmail() == null || profile.getEmail().trim().isEmpty()) {
+            throw new BadRequestException("Email cannot be empty");
+        }
+        if (profile.getRole().name()!="CLIENT" && profile.getRole().name()!="SELLER") {
+            throw new BadRequestException("Invalid role. Must be CLIENT or SELLER");
+        }   
+
         userRepository.findByUsername(profile.getUsername()).ifPresent(existing -> {
             if (!existing.getId().equals(userId)) {
                 
