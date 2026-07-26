@@ -47,9 +47,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.productService.getAllProducts().subscribe({
       next: (data: any[]) => {
-        // check if he owns the product
-    
-        
+     
         console.log(data)
         if (Array.isArray(data)) {
           this.products = data.map(p => ({
