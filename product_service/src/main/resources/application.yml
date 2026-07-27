@@ -7,7 +7,9 @@ spring:
 
   data:
     mongodb:
-      uri: ${SPRING_DATA_MONGODB_URI}
+      # uri: ${SPRING_DATA_MONGODB_URI}
+      uri: mongodb://localhost:27017/product_db
+
 
   servlet:
     multipart:
@@ -20,7 +22,9 @@ spring:
         - file:uploads/
 
   kafka:
-    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+    # bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+    # bootstrap-servers: ${KAFKA_HOST}
+    bootstrap-servers: localhost:9092
 
     consumer:
       group-id: product-group
@@ -39,4 +43,4 @@ management:
 
 media:
   service:
-    url: ${MEDIA_SERVICE_URL}
+    url: localhost:8083
