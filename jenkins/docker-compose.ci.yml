@@ -3,7 +3,7 @@ services:
   jenkins:
     build: ./
     container_name: jenkins
-
+    user: "1083:1083"
     ports:
       - "8080:8080"
       - "50000:50000"
@@ -14,7 +14,6 @@ services:
       # # Allows Jenkins to control host Docker
       # - /var/run/docker.sock:/var/run/docker.sock
       - /var/run/docker.sock:/var/run/docker.sock
-
 
 volumes:
   jenkins_home:
