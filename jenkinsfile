@@ -155,7 +155,7 @@ pipeline {
                 dir("${FRONTEND_DIR}") {
                     sh '''
                         npm install
-                        npm test --
+                        npm test 
                     '''
                 }
             }
