@@ -11,7 +11,8 @@ services:
     volumes:
       - jenkins_home:/var/jenkins_home
 
-      # Allows Jenkins to control host Docker
+      # # Allows Jenkins to control host Docker
+      # - /var/run/docker.sock:/var/run/docker.sock
       - /var/run/docker.sock:/var/run/docker.sock
 
 
