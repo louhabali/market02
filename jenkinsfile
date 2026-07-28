@@ -14,7 +14,7 @@ pipeline {
 
         BACKEND_DIR = 'backend'
 
-        FRONTEND_DIR = 'frontend'
+        FRONTEND_DIR = 'client'
 
         DEPLOY_DIR = '/opt/buy-01'
 
@@ -113,14 +113,14 @@ pipeline {
                     }
                 }
 
-                // stage('Media Tests') {
-                //     steps {
-                //         dir('media_service') {
-                //             sh 'chmod +x mvnw'
-                //             sh './mvnw test'
-                //         }
-                //     }
-                // }
+            // stage('Media Tests') {
+            //     steps {
+            //         dir('media_service') {
+            //             sh 'chmod +x mvnw'
+            //             sh './mvnw test'
+            //         }
+            //     }
+            // }
             }
 
             post {
@@ -131,10 +131,11 @@ pipeline {
         }
 
         stage('Build Frontend') {
+            
             steps {
                 dir("${FRONTEND_DIR}") {
                     sh '''
-                        npm install
+                        npx install
                         npm run build
                     '''
                 }
