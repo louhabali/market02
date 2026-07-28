@@ -1,0 +1,204 @@
+// pipeline {
+//     agent any
+
+//     options {
+//         timestamps()
+//         ansiColor('xterm')
+//         disableConcurrentBuilds()
+//     }
+
+//     environment {
+//         APP_NAME = 'buy-01'
+
+//         DOCKER_COMPOSE = 'docker compose'
+
+//         BACKEND_DIR = 'backend'
+
+//         FRONTEND_DIR = 'frontend'
+
+//         DEPLOY_DIR = '/opt/buy-01'
+
+//         EMAIL = 'team@example.com'
+//     }
+
+//     triggers {
+//         githubPush()
+
+//     // alternatively:
+//     // pollSCM('H/2 * * * *')
+//     }
+
+//     stages {
+//         stage('Checkout') {
+//             steps {
+//                 echo 'Cloning repository...'
+
+//                 checkout scm
+//             }
+//         }
+
+//         stage('Build Backend') {
+//             steps {
+//                 dir("${BACKEND_DIR}") {
+//                     sh 'mvn clean compile'
+//                 }
+//             }
+//         }
+
+//         stage('Run Backend Tests') {
+//             steps {
+//                 dir("${BACKEND_DIR}") {
+//                     sh 'mvn test'
+//                 }
+//             }
+
+//             post {
+//                 always {
+//                     junit '**/target/surefire-reports/*.xml'
+//                 }
+//             }
+//         }
+
+//         stage('Build Frontend') {
+//             steps {
+//                 dir("${FRONTEND_DIR}") {
+//                     sh '''
+//                         npm install
+//                         npm run build
+//                     '''
+//                 }
+//             }
+//         }
+
+//         stage('Frontend Tests') {
+//             steps {
+//                 dir("${FRONTEND_DIR}") {
+//                     sh '''
+//                         npm test -- --watch=false --browsers=ChromeHeadless
+//                     '''
+//                 }
+//             }
+//         }
+
+//         stage('Package Backend') {
+//             steps {
+//                 dir("${BACKEND_DIR}") {
+//                     sh 'mvn package -DskipTests'
+//                 }
+//             }
+//         }
+
+//         stage('Archive Artifacts') {
+//             steps {
+//                 archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+//             }
+//         }
+
+//         stage('Build Docker Images') {
+//             steps {
+//                 sh """
+//                     ${DOCKER_COMPOSE} build
+//                 """
+//             }
+//         }
+
+//         stage('Deploy') {
+//             steps {
+//                 sh """
+
+//                     mkdir -p ${DEPLOY_DIR}
+
+//                     cp docker-compose.yml ${DEPLOY_DIR}
+
+//                     cd ${DEPLOY_DIR}
+
+//                     ${DOCKER_COMPOSE} down
+
+//                     ${DOCKER_COMPOSE} up -d
+
+//                 """
+//             }
+//         }
+
+//         stage('Health Check') {
+//             steps {
+//                 sh '''
+
+//                 sleep 20
+
+//                 curl --fail http://localhost:8080/actuator/health
+
+//                 '''
+//             }
+//         }
+//     }
+
+//     post {
+//         success {
+//             echo 'Deployment successful.'
+
+//             mail(
+//                 to: EMAIL,
+//                 subject: "SUCCESS: ${JOB_NAME} #${BUILD_NUMBER}",
+//                 body: """
+// Build Successful
+
+// Project:
+// ${APP_NAME}
+
+// Job:
+// ${JOB_NAME}
+
+// Build:
+// ${BUILD_NUMBER}
+
+// URL:
+// ${BUILD_URL}
+// """
+//             )
+//         }
+
+//         failure {
+//             echo 'Pipeline failed.'
+
+//             script {
+//                 sh """
+
+//                 echo "Rollback..."
+
+//                 cd ${DEPLOY_DIR}
+
+//                 ${DOCKER_COMPOSE} down
+
+//                 docker compose -f docker-compose.previous.yml up -d || true
+
+//                 """
+//             }
+
+//             mail(
+//                 to: EMAIL,
+//                 subject: "FAILED: ${JOB_NAME} #${BUILD_NUMBER}",
+//                 body: """
+// Pipeline Failed
+
+// Project:
+// ${APP_NAME}
+
+// Job:
+// ${JOB_NAME}
+
+// Build:
+// ${BUILD_NUMBER}
+
+// See:
+
+// ${BUILD_URL}
+// """
+//             )
+//         }
+
+//         always {
+//             cleanWs()
+//         }
+//     }
+// }
