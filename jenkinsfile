@@ -85,9 +85,41 @@ pipeline {
         }
 
         stage('Run Backend Tests') {
-            steps {
-                dir("${BACKEND_DIR}") {
-                    sh './mvnw test'
+            parallel {
+                stage('Gateway Tests') {
+                    steps {
+                        dir('gateway_service') {
+                            sh 'chmod +x mvnw'
+                            sh './mvnw test'
+                        }
+                    }
+                }
+
+                stage('User Tests') {
+                    steps {
+                        dir('user_service') {
+                            sh 'chmod +x mvnw'
+                            sh './mvnw test'
+                        }
+                    }
+                }
+
+                stage('Product Tests') {
+                    steps {
+                        dir('product_service') {
+                            sh 'chmod +x mvnw'
+                            sh './mvnw test'
+                        }
+                    }
+                }
+
+                stage('Media Tests') {
+                    steps {
+                        dir('media_service') {
+                            sh 'chmod +x mvnw'
+                            sh './mvnw test'
+                        }
+                    }
                 }
             }
 
@@ -120,9 +152,37 @@ pipeline {
         }
 
         stage('Package Backend') {
-            steps {
-                dir("${BACKEND_DIR}") {
-                    sh './mvnw package -DskipTests'
+            parallel {
+                stage('Gateway Package') {
+                    steps {
+                        dir('gateway_service') {
+                            sh './mvnw package -DskipTests'
+                        }
+                    }
+                }
+
+                stage('User Package') {
+                    steps {
+                        dir('user_service') {
+                            sh './mvnw package -DskipTests'
+                        }
+                    }
+                }
+
+                stage('Product Package') {
+                    steps {
+                        dir('product_service') {
+                            sh './mvnw package -DskipTests'
+                        }
+                    }
+                }
+
+                stage('Media Package') {
+                    steps {
+                        dir('media_service') {
+                            sh './mvnw package -DskipTests'
+                        }
+                    }
                 }
             }
         }
