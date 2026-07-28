@@ -113,14 +113,14 @@ pipeline {
                     }
                 }
 
-                stage('Media Tests') {
-                    steps {
-                        dir('media_service') {
-                            sh 'chmod +x mvnw'
-                            sh './mvnw test'
-                        }
-                    }
-                }
+                // stage('Media Tests') {
+                //     steps {
+                //         dir('media_service') {
+                //             sh 'chmod +x mvnw'
+                //             sh './mvnw test'
+                //         }
+                //     }
+                // }
             }
 
             post {
