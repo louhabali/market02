@@ -37,10 +37,49 @@ pipeline {
             }
         }
 
+        // stage('Build Backend') {
+        //     steps {
+        //         dir("${BACKEND_DIR}") {
+        //             sh './mvnw clean compile'
+        //         }
+        //     }
+        // }
         stage('Build Backend') {
-            steps {
-                dir("${BACKEND_DIR}") {
-                    sh './mvnw clean compile'
+            parallel {
+                stage('Gateway') {
+                    steps {
+                        dir('gateway_service') {
+                            sh 'chmod +x mvnw'
+                            sh './mvnw clean package'
+                        }
+                    }
+                }
+
+                stage('User') {
+                    steps {
+                        dir('user_service') {
+                            sh 'chmod +x mvnw'
+                            sh './mvnw clean package'
+                        }
+                    }
+                }
+
+                stage('Product') {
+                    steps {
+                        dir('product_service') {
+                            sh 'chmod +x mvnw'
+                            sh './mvnw clean package'
+                        }
+                    }
+                }
+
+                stage('Media') {
+                    steps {
+                        dir('media_service') {
+                            sh 'chmod +x mvnw'
+                            sh './mvnw clean package'
+                        }
+                    }
                 }
             }
         }
