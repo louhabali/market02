@@ -135,7 +135,7 @@ pipeline {
             steps {
                 dir("${FRONTEND_DIR}") {
                     sh '''
-                        npx install
+                        npm install
                         npm run build
                     '''
                 }
