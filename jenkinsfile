@@ -131,14 +131,15 @@ pipeline {
         }
 
         stage('Build Frontend') {
-            agent {
-                any {
-                    image 'node:22'
-                }
-            }
+            // agent {
+            //     any {
+            //         image 'node:22'
+            //     }
+            // }
             steps {
                 dir("${FRONTEND_DIR}") {
                     sh '''
+                        apt install -y npm
                         npm install
                         npm run build
                     '''
