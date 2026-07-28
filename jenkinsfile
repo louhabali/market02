@@ -1,11 +1,11 @@
 pipeline {
     agent any
 
-    options {
-        timestamps()
-        ansiColor('xterm')
-        disableConcurrentBuilds()
-    }
+    // options {
+    //     timestamps()
+    //     // ansiColor('xterm')
+    //     disableConcurrentBuilds()
+    // }
 
     environment {
         APP_NAME = 'buy-01'
