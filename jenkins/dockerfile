@@ -1,0 +1,50 @@
+FROM jenkins/jenkins:lts
+
+USER root
+
+# Update packages
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    unzip \
+    gnupg \
+    ca-certificates
+
+# -----------------------------
+# Install Docker CLI
+# -----------------------------
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg \
+    | gpg --dearmor -o /usr/share/keyrings/docker.gpg
+
+RUN echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker.gpg] \
+    https://download.docker.com/linux/debian \
+    $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
+    > /etc/apt/sources.list.d/docker.list
+
+RUN apt-get update && \
+    apt-get install -y docker-ce-cli docker-compose-plugin
+
+# -----------------------------
+# Install Node.js 22
+# -----------------------------
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+
+RUN apt-get install -y nodejs
+
+# -----------------------------
+# Install Chromium
+# -----------------------------
+RUN apt-get install -y chromium
+
+ENV CHROME_BIN=/usr/bin/chromium
+
+# -----------------------------
+# Give Jenkins access to Docker socket
+# -----------------------------
+RUN groupadd -f docker
+
+RUN usermod -aG docker jenkins
+
+USER jenkins
