@@ -139,7 +139,7 @@ pipeline {
             steps {
                 dir("${FRONTEND_DIR}") {
                     sh '''
-                        apt install -y npm
+                        sudo apt install -y npm
                         npm install
                         npm run build
                     '''
