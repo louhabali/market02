@@ -131,11 +131,15 @@ pipeline {
         }
 
         stage('Build Frontend') {
-            
+            agent {
+                docker {
+                    image 'node:22'
+                }
+            }
             steps {
                 dir("${FRONTEND_DIR}") {
                     sh '''
-                        npx install
+                        npm install
                         npm run build
                     '''
                 }
