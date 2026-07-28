@@ -40,7 +40,7 @@ pipeline {
         stage('Build Backend') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh 'mvn clean compile'
+                    sh '././mvnw clean compile'
                 }
             }
         }
@@ -48,7 +48,7 @@ pipeline {
         stage('Run Backend Tests') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh 'mvn test'
+                    sh './mvnw test'
                 }
             }
 
@@ -83,7 +83,7 @@ pipeline {
         stage('Package Backend') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    sh 'mvn package -DskipTests'
+                    sh './mvnw package -DskipTests'
                 }
             }
         }
