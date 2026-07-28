@@ -22,8 +22,7 @@ pipeline {
             steps {
                 sh '''
             whoami
-            docker --version
-            docker compose version
+            ${COMPOSE} version
             docker ps
         '''
             }
@@ -59,10 +58,10 @@ pipeline {
         stage('Run Backend Tests') {
             steps {
                 sh '''
-                    docker compose exec gateway-service ./mvnw test
-                    docker compose exec user-service ./mvnw test
-                    docker compose exec product-service ./mvnw test
-                    docker compose exec media-service ./mvnw test
+                    ${COMPOSE} exec gateway-service ./mvnw test
+                    ${COMPOSE} exec user-service ./mvnw test
+                    ${COMPOSE} exec product-service ./mvnw test
+                    ${COMPOSE} exec media-service ./mvnw test
                 '''
             }
         }
@@ -70,9 +69,9 @@ pipeline {
         stage('Run Frontend Tests') {
             steps {
                 sh '''
-                    docker compose up -d frontend
+                    ${COMPOSE} up -d frontend
 
-                    docker compose exec angular-client npm test -- --watch=false --browsers=ChromeHeadless
+                    ${COMPOSE} exec angular-client npm test -- --watch=false --browsers=ChromeHeadless
                 '''
             }
         }
@@ -98,9 +97,9 @@ pipeline {
 
                     cd ${DEPLOY_DIR}
 
-                    docker compose down
+                    ${COMPOSE} down
 
-                    docker compose up -d
+                    ${COMPOSE} up -d
                 """
             }
         }
@@ -129,7 +128,7 @@ pipeline {
 
         always {
             sh '''
-                docker compose down -v || true
+                ${COMPOSE} down -v || true
             '''
 
             cleanWs()
