@@ -1,6 +1,8 @@
 pipeline {
     agent any
-
+    tools {
+        nodejs 'NodeJS-Name-In-Tools' // Replaces system PATH
+    }
     // options {
     //     timestamps()
     //     // ansiColor('xterm')
@@ -137,10 +139,8 @@ pipeline {
             //     }
             // }
             steps {
-                agent any
-                tools {
-                    nodejs 'NodeJS-Name-In-Tools' // Replaces system PATH
-                }
+                // agent any
+
                 dir("${FRONTEND_DIR}") {
                     sh '''
                         npm install
