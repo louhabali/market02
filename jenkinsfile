@@ -1,312 +1,128 @@
 pipeline {
     agent any
-    tools {
-        nodejs 'nodelkwa' // Replaces system PATH
-    }
-    // options {
-    //     timestamps()
-    //     // ansiColor('xterm')
-    //     disableConcurrentBuilds()
-    // }
 
     environment {
         APP_NAME = 'buy-01'
-
-        DOCKER_COMPOSE = 'docker compose'
-
-        BACKEND_DIR = 'backend'
-
-        FRONTEND_DIR = 'client'
-
+        COMPOSE = 'docker compose'
         DEPLOY_DIR = '/opt/buy-01'
-
         EMAIL = 'team@example.com'
     }
 
     triggers {
         githubPush()
-
-    // alternatively:
-    // pollSCM('H/2 * * * *')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                echo 'Cloning repository...'
-
                 checkout scm
             }
         }
 
-        // stage('Build Backend') {
-        //     steps {
-        //         dir("${BACKEND_DIR}") {
-        //             sh './mvnw clean compile'
-        //         }
-        //     }
-        // }
-        stage('Build Backend') {
-            parallel {
-                stage('Gateway') {
-                    steps {
-                        dir('gateway_service') {
-                            sh 'chmod +x mvnw'
-                            sh './mvnw clean package'
-                        }
-                    }
-                }
+        stage('Build Images') {
+            steps {
+                sh '''
+                    ${COMPOSE} build
+                '''
+            }
+        }
 
-                stage('User') {
-                    steps {
-                        dir('user_service') {
-                            sh 'chmod +x mvnw'
-                            sh './mvnw clean package'
-                        }
-                    }
-                }
+        stage('Start Infrastructure') {
+            steps {
+                sh '''
+                    ${COMPOSE} up -d mongodb redis kafka
+                '''
+            }
+        }
 
-                stage('Product') {
-                    steps {
-                        dir('product_service') {
-                            sh 'chmod +x mvnw'
-                            sh './mvnw clean package'
-                        }
-                    }
-                }
-
-                stage('Media') {
-                    steps {
-                        dir('media_service') {
-                            sh 'chmod +x mvnw'
-                            sh './mvnw clean package'
-                        }
-                    }
-                }
+        stage('Start Application') {
+            steps {
+                sh '''
+                    ${COMPOSE} up -d \
+                        user-service \
+                        product-service \
+                        media-service \
+                        gateway
+                '''
             }
         }
 
         stage('Run Backend Tests') {
-            parallel {
-                stage('Gateway Tests') {
-                    steps {
-                        dir('gateway_service') {
-                            sh 'chmod +x mvnw'
-                            sh './mvnw test'
-                        }
-                    }
-                }
-
-                stage('User Tests') {
-                    steps {
-                        dir('user_service') {
-                            sh 'chmod +x mvnw'
-                            sh './mvnw test'
-                        }
-                    }
-                }
-
-                stage('Product Tests') {
-                    steps {
-                        dir('product_service') {
-                            sh 'chmod +x mvnw'
-                            sh './mvnw test'
-                        }
-                    }
-                }
-
-            // stage('Media Tests') {
-            //     steps {
-            //         dir('media_service') {
-            //             sh 'chmod +x mvnw'
-            //             sh './mvnw test'
-            //         }
-            //     }
-            // }
-            }
-
-            post {
-                always {
-                    junit '**/target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Build Frontend') {
-            // agent {
-            //     any {
-            //         image 'node:22'
-            //     }
-            // }
             steps {
-                // agent any
-
-                dir("${FRONTEND_DIR}") {
-                    sh '''
-                        npm install
-                        npm run build
-                    '''
-                }
+                sh '''
+                    docker compose exec gateway-service ./mvnw test
+                    docker compose exec user-service ./mvnw test
+                    docker compose exec product-service ./mvnw test
+                    docker compose exec media-service ./mvnw test
+                '''
             }
         }
 
-        stage('Frontend Tests') {
+        stage('Run Frontend Tests') {
             steps {
-                dir("${FRONTEND_DIR}") {
-                    sh '''
-                        npm install
-                        npm test 
-                    '''
-                }
-            }
-        }
+                sh '''
+                    docker compose up -d frontend
 
-        stage('Package Backend') {
-            parallel {
-                stage('Gateway Package') {
-                    steps {
-                        dir('gateway_service') {
-                            sh './mvnw package -DskipTests'
-                        }
-                    }
-                }
-
-                stage('User Package') {
-                    steps {
-                        dir('user_service') {
-                            sh './mvnw package -DskipTests'
-                        }
-                    }
-                }
-
-                stage('Product Package') {
-                    steps {
-                        dir('product_service') {
-                            sh './mvnw package -DskipTests'
-                        }
-                    }
-                }
-
-                stage('Media Package') {
-                    steps {
-                        dir('media_service') {
-                            sh './mvnw package -DskipTests'
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Archive Artifacts') {
-            steps {
-                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
-            }
-        }
-
-        stage('Build Docker Images') {
-            steps {
-                sh """
-                    ${DOCKER_COMPOSE} build
-                """
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                sh """
-
-                    mkdir -p ${DEPLOY_DIR}
-
-                    cp docker-compose.yml ${DEPLOY_DIR}
-
-                    cd ${DEPLOY_DIR}
-
-                    ${DOCKER_COMPOSE} down
-
-                    ${DOCKER_COMPOSE} up -d
-
-                """
+                    docker compose exec angular-client npm test -- --watch=false --browsers=ChromeHeadless
+                '''
             }
         }
 
         stage('Health Check') {
             steps {
                 sh '''
+                    sleep 20
 
-                sleep 20
-
-                curl --fail http://localhost:8080/actuator/health
-
+                    curl --fail http://localhost:8089/actuator/health
                 '''
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh """
+                    mkdir -p ${DEPLOY_DIR}
+
+                    cp docker-compose.yml ${DEPLOY_DIR}
+
+                    cp .env ${DEPLOY_DIR} || true
+
+                    cd ${DEPLOY_DIR}
+
+                    docker compose down
+
+                    docker compose up -d
+                """
             }
         }
     }
 
     post {
         success {
-            echo 'Deployment successful.'
+            echo 'Deployment successful'
 
             mail(
                 to: EMAIL,
-                subject: "SUCCESS: ${JOB_NAME} #${BUILD_NUMBER}",
-                body: """
-Build Successful
-
-Project:
-${APP_NAME}
-
-Job:
-${JOB_NAME}
-
-Build:
-${BUILD_NUMBER}
-
-URL:
-${BUILD_URL}
-"""
+                subject: "SUCCESS ${JOB_NAME} #${BUILD_NUMBER}",
+                body: "Build succeeded.\n${BUILD_URL}"
             )
         }
 
         failure {
-            echo 'Pipeline failed.'
-
-            script {
-                sh """
-
-                echo "Rollback..."
-
-                cd ${DEPLOY_DIR}
-
-                ${DOCKER_COMPOSE} down
-
-                docker compose -f docker-compose.previous.yml up -d || true
-
-                """
-            }
+            echo 'Deployment failed'
 
             mail(
                 to: EMAIL,
-                subject: "FAILED: ${JOB_NAME} #${BUILD_NUMBER}",
-                body: """
-Pipeline Failed
-
-Project:
-${APP_NAME}
-
-Job:
-${JOB_NAME}
-
-Build:
-${BUILD_NUMBER}
-
-See:
-
-${BUILD_URL}
-"""
+                subject: "FAILED ${JOB_NAME} #${BUILD_NUMBER}",
+                body: "Build failed.\n${BUILD_URL}"
             )
         }
 
         always {
+            sh '''
+                docker compose down -v || true
+            '''
+
             cleanWs()
         }
     }
