@@ -18,7 +18,16 @@ pipeline {
                 checkout scm
             }
         }
-
+        stage('Docker Check') {
+            steps {
+                sh '''
+            whoami
+            docker --version
+            docker compose version
+            docker ps
+        '''
+            }
+        }
         stage('Build Images') {
             steps {
                 sh '''
