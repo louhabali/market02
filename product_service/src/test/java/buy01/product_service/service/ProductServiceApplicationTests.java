@@ -1,4 +1,4 @@
-package buy01.product_service;
+package buy01.product_service.service;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

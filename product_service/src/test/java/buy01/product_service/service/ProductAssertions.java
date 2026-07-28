@@ -1,4 +1,4 @@
-package buy01.product_service.lkwa;
+package buy01.product_service.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
