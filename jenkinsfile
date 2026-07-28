@@ -152,6 +152,11 @@ pipeline {
 
         stage('Frontend Tests') {
             steps {
+                    agent {
+                    docker {
+                        image 'cypress/browsers:node-22.19.0-chrome-139.0.7258.154-1'
+                    }
+                    }
                 dir("${FRONTEND_DIR}") {
                     sh '''
                         npm test -- --watch=false --browsers=ChromeHeadless
