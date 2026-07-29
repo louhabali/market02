@@ -5,7 +5,7 @@ pipeline {
         APP_NAME   = 'buy-01'
         COMPOSE    = 'docker compose'
         DEPLOY_DIR = '/opt/buy-01'
-        EMAIL      = 'team@example.com'
+        EMAIL      = 'louhabali@gmail.com'
     }
 
     triggers {
@@ -29,7 +29,7 @@ pipeline {
             }
         }
 
-        stage('Build Images & test frontend') {
+        stage('Build Images & Test Frontend') {
             steps {
                 sh '${COMPOSE} build'
             }
@@ -43,7 +43,6 @@ pipeline {
 
         stage('Start Application') {
             steps {
-                // Fixed container names: gateway and frontend
                 sh '''
                     ${COMPOSE} up -d \
                         user-service \
@@ -57,19 +56,25 @@ pipeline {
 
         stage('Run Backend Tests') {
             steps {
-                sh '''
-                    cd gateway_service && ./mvnw test
-                    cd ../user_service && ./mvnw test
-                    cd ../product_service && ./mvnw test
-                '''
+                // Running each test block independently so working directories don't pollute subsequent steps
+                sh '(cd gateway_service && ./mvnw test)'
+                sh '(cd user_service && ./mvnw test)'
+                sh '(cd product_service && ./mvnw test)'
+                sh '(cd media_service && ./mvnw test)'
             }
         }
 
         stage('Health Check') {
             steps {
+                // Smart retry: pings Actuator health every 5s (up to 10 retries = 50s max timeout)
                 sh '''
-                    sleep 20
-                    curl --fail http://localhost:8089/actuator/health
+                    ${COMPOSE} exec -T gateway curl \
+                        --connect-timeout 5 \
+                        --max-time 10 \
+                        --retry 10 \
+                        --retry-delay 5 \
+                        --retry-connrefused \
+                        --fail http://localhost:8089/actuator/health
                 '''
             }
         }
@@ -92,23 +97,24 @@ pipeline {
         success {
             echo 'Deployment successful'
             mail(
-                to: EMAIL,
-                subject: "SUCCESS ${JOB_NAME} #${BUILD_NUMBER}",
-                body: "Build succeeded.\n${BUILD_URL}"
+                to: env.EMAIL,
+                subject: "SUCCESS ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Build succeeded.\n${env.BUILD_URL}"
             )
         }
 
         failure {
             echo 'Deployment failed'
             mail(
-                to: EMAIL,
-                subject: "FAILED ${JOB_NAME} #${BUILD_NUMBER}",
-                body: "Build failed.\n${BUILD_URL}"
+                to: env.EMAIL,
+                subject: "FAILED ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Build failed.\n${env.BUILD_URL}"
             )
         }
 
         always {
-            // Clean workspace artifacts without killing the deployed stack
+            // Teardown temp test containers from workspace without touching production deployment at DEPLOY_DIR
+            sh '${COMPOSE} down --remove-orphans || true'
             cleanWs()
         }
     }
