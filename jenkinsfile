@@ -74,7 +74,13 @@ pipeline {
                 sh """
                     mkdir -p ${DEPLOY_DIR}
                     cp docker-compose.yml ${DEPLOY_DIR}/
-                    cp .env ${DEPLOY_DIR}/ || true
+                    
+                    # Check if .env exists before copying, or create a dummy/production one
+                    if [ -f .env ]; then
+                        cp .env ${DEPLOY_DIR}/
+                    else
+                        echo "No .env file in workspace, skipping..."
+                    fi
                     
                     cd ${DEPLOY_DIR}
                     ${COMPOSE} up -d --no-build --remove-orphans
