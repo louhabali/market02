@@ -86,8 +86,7 @@ pipeline {
     post {
         success {
             echo 'Deployment successful'
-            // Sends success notification (Configure Jenkins SMTP under System Settings)
-            mail(
+            emailext (
                 to: env.EMAIL,
                 subject: "SUCCESS: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                 body: "Pipeline completed successfully and deployed to ${env.DEPLOY_DIR}.\n\nDetails: ${env.BUILD_URL}"
@@ -96,8 +95,6 @@ pipeline {
 
         failure {
             echo 'Deployment failed - Initiating Rollback...'
-            
-            // Automated Rollback Strategy: Restarts the last known stable state in production
             sh """
                 if [ -d "${env.DEPLOY_DIR}" ]; then
                     echo "Executing rollback in ${env.DEPLOY_DIR}..."
@@ -105,9 +102,7 @@ pipeline {
                     ${env.COMPOSE} up -d --remove-orphans || true
                 fi
             """
-
-            // Sends failure notification with build logs link
-            mail(
+            emailext (
                 to: env.EMAIL,
                 subject: "FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                 body: "Pipeline or Deployment failed. Automated rollback attempted.\n\nCheck logs at: ${env.BUILD_URL}"
@@ -115,7 +110,6 @@ pipeline {
         }
 
         always {
-            // Cleans up CI workspace test containers without touching the production deployment
             sh '${COMPOSE} down --remove-orphans || true'
             cleanWs()
         }
