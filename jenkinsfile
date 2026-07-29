@@ -69,17 +69,11 @@ pipeline {
             }
         }
 
-      stage('Health Check') {
+   stage('Health Check') {
             steps {
                 sh '''
-                    # Pings the exposed port directly on the Jenkins agent
-                    curl \
-                        --connect-timeout 5 \
-                        --max-time 10 \
-                        --retry 10 \
-                        --retry-delay 5 \
-                        --retry-connrefused \
-                        --fail http://localhost:8089/actuator/health
+                    # Uses wget pre-installed in Alpine to check Actuator health inside the gateway container
+                    ${COMPOSE} exec -T gateway wget --quiet --tries=10 --waitretry=5 --spider http://localhost:8089/actuator/health
                 '''
             }
         }
