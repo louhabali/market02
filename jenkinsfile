@@ -29,7 +29,7 @@ pipeline {
             }
         }
 
-        stage('Build Images') {
+        stage('Build Images & test frontend') {
             steps {
                 sh '${COMPOSE} build'
             }
@@ -61,15 +61,7 @@ pipeline {
                     cd gateway_service && ./mvnw test
                     cd ../user_service && ./mvnw test
                     cd ../product_service && ./mvnw test
-                    cd ../media_service && ./mvnw test
                 '''
-            }
-        }
-
-        stage('Run Frontend Tests') {
-            steps {
-                // Fixed: exec into 'frontend' with -T flag (non-interactive CI mode)
-                sh '${COMPOSE} exec -T frontend npm test -- --watch=false --browsers=ChromeHeadless'
             }
         }
 

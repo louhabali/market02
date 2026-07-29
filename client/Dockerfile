@@ -1,13 +1,23 @@
-# --- Stage 1: Build Angular App ---
+# --- Stage 1: Build & Test Angular App ---
 FROM node:20-alpine AS build
+
+# Install Chromium for headless testing in Alpine
+RUN apk add --no-cache chromium
+ENV CHROME_BIN=/usr/bin/chromium-browser
+
 WORKDIR /app
 
 # Copy dependency manifests and install
 COPY package*.json ./
 RUN npm ci
 
-# Copy source code and build for production
+# Copy source code
 COPY . .
+
+# Run Unit Tests (Fails build if tests fail)
+RUN npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox
+
+# Build for production
 RUN npm run build -- --configuration production
 
 # --- Stage 2: Serve with Nginx ---

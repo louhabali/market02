@@ -16,6 +16,12 @@ module.exports = function (config) {
       },
       clearContext: false // leave Jasmine Spec Runner output visible in browser
     },
+    customLaunchers: {
+  ChromeHeadlessNoSandbox: {
+    base: 'ChromeHeadless',
+    flags: ['--no-sandbox', '--disable-setuid-sandbox']
+  }
+},
     jasmineHtmlReporter: {
       suppressAll: true // removes duplicated traces
     },
