@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME   = '01E-COM'
-        COMPOSE    = 'docker compose -p 01E-COM'
-        DEPLOY_DIR = '/opt/01E-COM'
+        APP_NAME   = '01e_com'
+        COMPOSE    = 'docker compose -p 01e_com'
+        DEPLOY_DIR = '/opt/01e_com'
         EMAIL      = 'louhabali@gmail.com'
     }
 
