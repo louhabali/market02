@@ -29,9 +29,9 @@ pipeline {
             }
         }
 
-        stage('Build Images & Test Frontend') {
+        stage('Build & Test Frontend') {
             steps {
-                // Frontend Karma/Jasmine tests execute inside the multi-stage Dockerfile during build
+                // Frontend Karma/Jasmine unit tests run inside Dockerfile multi-stage build
                 sh '${COMPOSE} build'
             }
         }
@@ -42,7 +42,7 @@ pipeline {
             }
         }
 
-        stage('Start Test Application') {
+        stage('Start Test Services') {
             steps {
                 sh '''
                     ${COMPOSE} up -d \
@@ -55,7 +55,7 @@ pipeline {
             }
         }
 
-        stage('Run Backend Tests') {
+        stage('Run Backend Unit Tests') {
             steps {
                 sh '(cd gateway_service && ./mvnw test)'
                 sh '(cd user_service && ./mvnw test)'
@@ -63,61 +63,75 @@ pipeline {
             }
             post {
                 always {
-                    // Publishes JUnit test results directly into the Jenkins UI
                     junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to Production') {
             steps {
-                sh """
-                    mkdir -p ${DEPLOY_DIR}
-                    cp docker-compose.yml ${DEPLOY_DIR}/
+                // Securely fetch your .env file from Jenkins Credentials Manager
+                withCredentials([file(credentialsId: '01e-com-env-file', variable: 'ENV_FILE')]) {
+                    echo 'Deploying to /opt/01e_com...'
                     
-                    # Check if .env exists before copying, or create a dummy/production one
-                    if [ -f .env ]; then
-                        cp .env ${DEPLOY_DIR}/
-                    else
-                        echo "No .env file in workspace, skipping..."
-                    fi
-                    
-                    cd ${DEPLOY_DIR}
-                    ${COMPOSE} up -d --no-build --remove-orphans
-                """
+                    sh '''
+                        mkdir -p ${DEPLOY_DIR}
+                        cp docker-compose.yml ${DEPLOY_DIR}/
+                        cp "$ENV_FILE" ${DEPLOY_DIR}/.env
+                    '''
+
+                    script {
+                        try {
+                            sh '''
+                                cd ${DEPLOY_DIR}
+                                ${COMPOSE} up -d --no-build --remove-orphans
+                                ${COMPOSE} ps
+                            '''
+                        } catch (err) {
+                            if (!env.GIT_PREVIOUS_SUCCESSFUL_COMMIT) {
+                                error 'Deploy failed and no previous successful commit exists. Manual fix required.'
+                            }
+
+                            echo "Deploy failed! Rolling back to Git commit: ${env.GIT_PREVIOUS_SUCCESSFUL_COMMIT}"
+                            
+                            sh '''
+                                git checkout ${GIT_PREVIOUS_SUCCESSFUL_COMMIT}
+                                cp docker-compose.yml ${DEPLOY_DIR}/
+                                ${COMPOSE} build
+                                cd ${DEPLOY_DIR}
+                                ${COMPOSE} up -d --remove-orphans
+                            '''
+                            error "Deployment failed. Rolled back to commit ${env.GIT_PREVIOUS_SUCCESSFUL_COMMIT}"
+                        }
+                    }
+                }
             }
         }
     }
 
     post {
+        always {
+            // Clean up temporary CI containers & workspace files without stopping production
+            sh '${COMPOSE} down --remove-orphans || true'
+            cleanWs()
+        }
+
         success {
             echo 'Deployment successful'
             emailext (
                 to: env.EMAIL,
-                subject: "SUCCESS: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
-                body: "Pipeline completed successfully and deployed to ${env.DEPLOY_DIR}.\n\nDetails: ${env.BUILD_URL}"
+                subject: "✅ SUCCESS: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
+                body: "Pipeline completed successfully and deployed to ${env.DEPLOY_DIR}.\n\nLogs: ${env.BUILD_URL}"
             )
         }
 
         failure {
-            echo 'Deployment failed - Initiating Rollback...'
-            sh """
-                if [ -d "${env.DEPLOY_DIR}" ]; then
-                    echo "Executing rollback in ${env.DEPLOY_DIR}..."
-                    cd ${env.DEPLOY_DIR}
-                    ${env.COMPOSE} up -d --remove-orphans || true
-                fi
-            """
+            echo 'Deployment failed'
             emailext (
                 to: env.EMAIL,
-                subject: "FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
-                body: "Pipeline or Deployment failed. Automated rollback attempted.\n\nCheck logs at: ${env.BUILD_URL}"
+                subject: "🚨 FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
+                body: "Pipeline or deployment failed. Check logs at: ${env.BUILD_URL}"
             )
-        }
-
-        always {
-            sh '${COMPOSE} down --remove-orphans || true'
-            cleanWs()
         }
     }
 }
