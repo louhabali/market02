@@ -93,27 +93,16 @@ pipeline {
         }
     }
 
-    post {
+   post {
         success {
             echo 'Deployment successful'
-            mail(
-                to: env.EMAIL,
-                subject: "SUCCESS ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Build succeeded.\n${env.BUILD_URL}"
-            )
         }
 
         failure {
             echo 'Deployment failed'
-            mail(
-                to: env.EMAIL,
-                subject: "FAILED ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Build failed.\n${env.BUILD_URL}"
-            )
         }
 
         always {
-            // Teardown temp test containers from workspace without touching production deployment at DEPLOY_DIR
             sh '${COMPOSE} down --remove-orphans || true'
             cleanWs()
         }
