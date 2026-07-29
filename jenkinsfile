@@ -72,12 +72,21 @@ pipeline {
    stage('Health Check') {
             steps {
                 sh '''
-                    # Uses wget pre-installed in Alpine to check Actuator health inside the gateway container
-                    ${COMPOSE} exec -T gateway wget --quiet --tries=10 --waitretry=5 --spider http://localhost:8089/actuator/health
+                    # Retries up to 12 times (60 seconds total timeout) using BusyBox wget
+                    for i in $(seq 1 12); do
+                        if ${COMPOSE} exec -T gateway wget -q --spider http://localhost:8089/actuator/health; then
+                            echo "Gateway is healthy!"
+                            exit 0
+                        fi
+                        echo "Waiting for Gateway service to become healthy... (attempt $i/12)"
+                        sleep 5
+                    done
+                    
+                    echo "Health check failed after 60 seconds."
+                    exit 1
                 '''
             }
         }
-
         stage('Deploy') {
             steps {
                 sh """
