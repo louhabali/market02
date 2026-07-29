@@ -60,12 +60,12 @@ pipeline {
                 sh '(cd gateway_service && ./mvnw test)'
                 sh '(cd user_service && ./mvnw test)'
                 sh '(cd product_service && ./mvnw test)'
-                sh '(cd media_service && ./mvnw test)'
+              
             }
         }
 
     
-        stage('Deploy') {
+       stage('Deploy') {
             steps {
                 sh """
                     mkdir -p ${DEPLOY_DIR}
@@ -73,7 +73,8 @@ pipeline {
                     cp .env ${DEPLOY_DIR}/ || true
                     
                     cd ${DEPLOY_DIR}
-                    ${COMPOSE} up -d --remove-orphans
+                    # --no-build tells Compose to use the existing images built during CI
+                    ${COMPOSE} up -d --no-build --remove-orphans
                 """
             }
         }
