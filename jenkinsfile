@@ -69,11 +69,11 @@ pipeline {
             }
         }
 
-        stage('Health Check') {
+      stage('Health Check') {
             steps {
-                // Ensures application context & DB connections are fully ready before deployment
                 sh '''
-                    ${COMPOSE} exec -T gateway curl \
+                    # Pings the exposed port directly on the Jenkins agent
+                    curl \
                         --connect-timeout 5 \
                         --max-time 10 \
                         --retry 10 \
