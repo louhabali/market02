@@ -31,17 +31,18 @@ pipeline {
 
         stage('Build Images & Test Frontend') {
             steps {
+                // Frontend Karma/Jasmine tests execute inside the multi-stage Dockerfile during build
                 sh '${COMPOSE} build'
             }
         }
 
-        stage('Start Infrastructure') {
+        stage('Start Test Infrastructure') {
             steps {
                 sh '${COMPOSE} up -d mongodb redis kafka'
             }
         }
 
-        stage('Start Application') {
+        stage('Start Test Application') {
             steps {
                 sh '''
                     ${COMPOSE} up -d \
@@ -56,16 +57,34 @@ pipeline {
 
         stage('Run Backend Tests') {
             steps {
-                // Running each test block independently so working directories don't pollute subsequent steps
                 sh '(cd gateway_service && ./mvnw test)'
                 sh '(cd user_service && ./mvnw test)'
                 sh '(cd product_service && ./mvnw test)'
-              
+            }
+            post {
+                always {
+                    // Publishes JUnit test results directly into the Jenkins UI
+                    junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
+                }
             }
         }
 
-    
-       stage('Deploy') {
+        stage('Health Check') {
+            steps {
+                // Ensures application context & DB connections are fully ready before deployment
+                sh '''
+                    ${COMPOSE} exec -T gateway curl \
+                        --connect-timeout 5 \
+                        --max-time 10 \
+                        --retry 10 \
+                        --retry-delay 5 \
+                        --retry-connrefused \
+                        --fail http://localhost:8089/actuator/health
+                '''
+            }
+        }
+
+        stage('Deploy') {
             steps {
                 sh """
                     mkdir -p ${DEPLOY_DIR}
@@ -73,23 +92,45 @@ pipeline {
                     cp .env ${DEPLOY_DIR}/ || true
                     
                     cd ${DEPLOY_DIR}
-                    # --no-build tells Compose to use the existing images built during CI
                     ${COMPOSE} up -d --no-build --remove-orphans
                 """
             }
         }
     }
 
-   post {
+    post {
         success {
             echo 'Deployment successful'
+            // Sends success notification (Configure Jenkins SMTP under System Settings)
+            mail(
+                to: env.EMAIL,
+                subject: "SUCCESS: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
+                body: "Pipeline completed successfully and deployed to ${env.DEPLOY_DIR}.\n\nDetails: ${env.BUILD_URL}"
+            )
         }
 
         failure {
-            echo 'Deployment failed'
+            echo 'Deployment failed - Initiating Rollback...'
+            
+            // Automated Rollback Strategy: Restarts the last known stable state in production
+            sh """
+                if [ -d "${env.DEPLOY_DIR}" ]; then
+                    echo "Executing rollback in ${env.DEPLOY_DIR}..."
+                    cd ${env.DEPLOY_DIR}
+                    ${env.COMPOSE} up -d --remove-orphans || true
+                fi
+            """
+
+            // Sends failure notification with build logs link
+            mail(
+                to: env.EMAIL,
+                subject: "FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
+                body: "Pipeline or Deployment failed. Automated rollback attempted.\n\nCheck logs at: ${env.BUILD_URL}"
+            )
         }
 
         always {
+            // Cleans up CI workspace test containers without touching the production deployment
             sh '${COMPOSE} down --remove-orphans || true'
             cleanWs()
         }
