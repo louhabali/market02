@@ -61,6 +61,15 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_HOST}
       MEDIA_SERVICE_URL: ${MEDIA_SERVICE_URL}
 
+  media-service:
+    build: ./media_service
+    container_name: media-service
+    expose:
+      - "8083"
+    volumes:
+      - media-data:/app/uploads
+    restart: unless-stopped
+
   kafka:
     image: confluentinc/cp-kafka:7.6.1
     container_name: kafka
@@ -81,6 +90,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
   mongodb:
     image: mongo:7
     container_name: mongodb
