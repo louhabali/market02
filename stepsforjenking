@@ -1,3 +1,0 @@
-docker run -d --name jenkins -p 8080:8080 -p 50000:50000 -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts
-docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
-pass : 2f21501695fb43caada49238deb2fabb
