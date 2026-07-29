@@ -109,7 +109,7 @@ pipeline {
 
     post {
         always {
-            // Clean workspace .env and temporary test containers
+            //  c Clean workspace .env and temporary test containers
             sh '''
                 ${COMPOSE} down --remove-orphans || true
                 rm -f .env
