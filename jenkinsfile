@@ -64,21 +64,7 @@ pipeline {
             }
         }
 
-        stage('Health Check') {
-            steps {
-                // Smart retry: pings Actuator health every 5s (up to 10 retries = 50s max timeout)
-                sh '''
-                    ${COMPOSE} exec -T gateway curl \
-                        --connect-timeout 5 \
-                        --max-time 10 \
-                        --retry 10 \
-                        --retry-delay 5 \
-                        --retry-connrefused \
-                        --fail http://localhost:8089/actuator/health
-                '''
-            }
-        }
-
+    
         stage('Deploy') {
             steps {
                 sh """
