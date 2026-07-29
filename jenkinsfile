@@ -2,10 +2,10 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME = 'buy-01'
-        COMPOSE = 'docker compose'
+        APP_NAME   = 'buy-01'
+        COMPOSE    = 'docker compose'
         DEPLOY_DIR = '/opt/buy-01'
-        EMAIL = 'team@example.com'
+        EMAIL      = 'team@example.com'
     }
 
     triggers {
@@ -18,61 +18,59 @@ pipeline {
                 checkout scm
             }
         }
+
         stage('Docker Check') {
             steps {
                 sh '''
-            whoami
-            ${COMPOSE} version
-            docker ps
-        '''
+                    whoami
+                    ${COMPOSE} version
+                    docker ps
+                '''
             }
         }
+
         stage('Build Images') {
             steps {
-                sh '''
-                    ${COMPOSE} build
-                '''
+                sh '${COMPOSE} build'
             }
         }
 
         stage('Start Infrastructure') {
             steps {
-                sh '''
-                    ${COMPOSE} up -d mongodb redis kafka
-                '''
+                sh '${COMPOSE} up -d mongodb redis kafka'
             }
         }
 
         stage('Start Application') {
             steps {
+                // Fixed container names: gateway and frontend
                 sh '''
                     ${COMPOSE} up -d \
                         user-service \
                         product-service \
                         media-service \
-                        gateway
+                        gateway \
+                        frontend
                 '''
             }
         }
 
         stage('Run Backend Tests') {
             steps {
+                // Fixed: matched service name 'gateway'
                 sh '''
-                    ${COMPOSE} exec gateway-service ./mvnw test
-                    ${COMPOSE} exec user-service ./mvnw test
-                    ${COMPOSE} exec product-service ./mvnw test
-                    ${COMPOSE} exec media-service ./mvnw test
+                    ${COMPOSE} exec -T gateway ./mvnw test
+                    ${COMPOSE} exec -T user-service ./mvnw test
+                    ${COMPOSE} exec -T product-service ./mvnw test
+                    ${COMPOSE} exec -T media-service ./mvnw test
                 '''
             }
         }
 
         stage('Run Frontend Tests') {
             steps {
-                sh '''
-                    ${COMPOSE} up -d frontend
-
-                    ${COMPOSE} exec angular-client npm test -- --watch=false --browsers=ChromeHeadless
-                '''
+                // Fixed: exec into 'frontend' with -T flag (non-interactive CI mode)
+                sh '${COMPOSE} exec -T frontend npm test -- --watch=false --browsers=ChromeHeadless'
             }
         }
 
@@ -80,7 +78,6 @@ pipeline {
             steps {
                 sh '''
                     sleep 20
-
                     curl --fail http://localhost:8089/actuator/health
                 '''
             }
@@ -90,16 +87,11 @@ pipeline {
             steps {
                 sh """
                     mkdir -p ${DEPLOY_DIR}
-
-                    cp docker-compose.yml ${DEPLOY_DIR}
-
-                    cp .env ${DEPLOY_DIR} || true
-
+                    cp docker-compose.yml ${DEPLOY_DIR}/
+                    cp .env ${DEPLOY_DIR}/ || true
+                    
                     cd ${DEPLOY_DIR}
-
-                    ${COMPOSE} down
-
-                    ${COMPOSE} up -d
+                    ${COMPOSE} up -d --remove-orphans
                 """
             }
         }
@@ -108,7 +100,6 @@ pipeline {
     post {
         success {
             echo 'Deployment successful'
-
             mail(
                 to: EMAIL,
                 subject: "SUCCESS ${JOB_NAME} #${BUILD_NUMBER}",
@@ -118,7 +109,6 @@ pipeline {
 
         failure {
             echo 'Deployment failed'
-
             mail(
                 to: EMAIL,
                 subject: "FAILED ${JOB_NAME} #${BUILD_NUMBER}",
@@ -127,10 +117,7 @@ pipeline {
         }
 
         always {
-            sh '''
-                ${COMPOSE} down -v || true
-            '''
-
+            // Clean workspace artifacts without killing the deployed stack
             cleanWs()
         }
     }

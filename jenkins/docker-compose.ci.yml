@@ -1,14 +1,16 @@
 services:
   jenkins:
-    build: ./
+    build: .
     container_name: jenkins
+    user: root  # Running as root inside container or setting group permission fixes socket access
     ports:
       - "8080:8080"
       - "50000:50000"
-    # user: "1083:1083"
-
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /run/user/1083/docker.sock:/var/run/docker.sock
+      - /run/user/1034/docker.sock:/var/run/docker.sock
+
 volumes:
   jenkins_home:
