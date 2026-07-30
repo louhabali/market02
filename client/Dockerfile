@@ -1,15 +1,20 @@
+# Stage 1: Build Angular application
+FROM node:20-alpine AS build
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build -- --configuration production
+
+# Stage 2: Serve application with Nginx
 FROM nginx:alpine
-
-# Copy custom Nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy SSL certificates into Nginx directory
 COPY certs/ /etc/nginx/certs/
 
-# Copy the pre-built dist folder created by Jenkins in the workspace
-COPY dist/frontend/browser /usr/share/nginx/html
+# Note: Adjust 'client' if your output folder in angular.json is named differently (e.g. 01e_com or frontend)
+COPY --from=build /app/dist/client/browser /usr/share/nginx/html
 
-# Expose HTTP and HTTPS ports
-EXPOSE 8080 8443
-
+EXPOSE 80 443
 CMD ["nginx", "-g", "daemon off;"]
