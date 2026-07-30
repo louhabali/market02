@@ -23,8 +23,6 @@ pipeline {
             }
         }
 
-        stage('Run All Tests') {
-            parallel {
                 stage('Frontend Unit Tests') {
                     agent {
                         docker {
@@ -53,7 +51,7 @@ pipeline {
                         '''
                     }
                 }
-            }
+            
             post {
                 always {
                     junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
