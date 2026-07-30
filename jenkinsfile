@@ -26,18 +26,14 @@ pipeline {
         stage('Run All Tests') {
             parallel {
                 stage('Frontend Unit Tests') {
-                    agent {
-                        any {
-                            image 'zenika/alpine-chrome:with-node'
-                            reuseNode true
-                        }
-                    }
                     steps {
                         echo 'Running Angular unit tests inside isolated container...'
                         sh '''
-                            cd client
-                            npm ci
-                            npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox
+                            docker run --rm -u 0 \
+                              -v "${WORKSPACE}/client:/app" \
+                              -w /app \
+                              zenika/alpine-chrome:with-node \
+                              sh -c "export PATH=\$PATH:/usr/local/bin:/usr/bin && npm ci && npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox"
                         '''
                     }
                 }
@@ -64,8 +60,8 @@ pipeline {
             steps {
                 echo 'Tests passed! Compiling Angular app for production...'
                 sh '''
-                    docker run --rm \
-                      -v "$(pwd)/client:/app" \
+                    docker run --rm -u 0 \
+                      -v "${WORKSPACE}/client:/app" \
                       -w /app \
                       node:20-alpine \
                       sh -c "npm run build -- --configuration production"
@@ -98,7 +94,7 @@ pipeline {
 
     post {
         always {
-            // Clean up temporary .env workspace file
+            // Clean up temporary workspace environment file
             sh 'rm -f .env'
         }
 
