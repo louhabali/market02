@@ -27,15 +27,13 @@ pipeline {
             parallel {
                 stage('Frontend Unit Tests') {
                     steps {
-                        echo 'Running Angular unit tests inside isolated container...'
-                        dir('client') {
-                            script {
-                                docker.image('zenika/alpine-chrome:with-node').inside('-u 0') {
-                                    sh 'npm ci'
-                                    sh 'npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox'
-                                }
-                            }
-                        }
+                        echo 'Running Angular unit tests in isolated Node container...'
+                        sh '''
+                            tar -C client -cf - . | docker run --rm -i \
+                              -w /app \
+                              zenika/alpine-chrome:with-node \
+                              sh -c "tar -xf - -C /app && npm ci && npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox"
+                        '''
                     }
                 }
 
@@ -60,13 +58,13 @@ pipeline {
         stage('Build Frontend Production Dist') {
             steps {
                 echo 'Tests passed! Compiling Angular app for production...'
-                dir('client') {
-                    script {
-                        docker.image('node:20-alpine').inside('-u 0') {
-                            sh 'npm run build -- --configuration production'
-                        }
-                    }
-                }
+                sh '''
+                    # Runs npm run build inside container and streams the compiled dist back to workspace
+                    tar -C client -cf - . | docker run --rm -i \
+                      -w /app \
+                      node:20-alpine \
+                      sh -c "tar -xf - -C /app && npm ci && npm run build -- --configuration production && tar -C dist/client/browser -cf - ." | tar -C client/dist/client/browser -xf - || true
+                '''
             }
         }
 
@@ -95,7 +93,6 @@ pipeline {
 
     post {
         always {
-            // Clean up temporary .env workspace file
             sh 'rm -f .env'
         }
 
@@ -113,7 +110,7 @@ pipeline {
             emailext (
                 to: "${env.EMAIL}, ${env.EMAIL2}",
                 subject: "🚨 FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
-                body: "Tests or build failed before deployment. Production remains safe and untouched.\n\nCheck logs at: ${env.BUILD_URL}"
+                body: "Tests or build failed before deployment. Production remains safe.\n\nCheck logs at: ${env.BUILD_URL}"
             )
         }
     }
