@@ -54,21 +54,9 @@ pipeline {
             }
         }
 
-        stage('Build Frontend Production Dist') {
-            steps {
-                echo 'Tests passed! Compiling Angular app for production...'
-                sh '''
-                    mkdir -p client/dist/client/browser
-                    tar -C client -cf - . | docker run --rm -i -u 0 \
-                      node:20-alpine \
-                      sh -c "mkdir -p /app && tar -xf - -C /app && cd /app && npm ci && npm run build -- --configuration production && tar -C dist/client/browser -cf - ." | tar -C client/dist/client/browser -xf -
-                '''
-            }
-        }
-
         stage('Build Docker Images') {
             steps {
-                echo 'Building Docker production images...'
+                echo 'Building Docker production images (including Angular frontend)...'
                 sh '${COMPOSE} build'
             }
         }
