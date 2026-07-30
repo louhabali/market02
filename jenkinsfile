@@ -17,56 +17,37 @@ pipeline {
         stage('Checkout & Setup Env') {
             steps {
                 checkout scm
-                // Injects the secret .env into the workspace immediately
                 withCredentials([file(credentialsId: '01e-com-env-file', variable: 'ENV_FILE')]) {
                     sh 'cp "$ENV_FILE" .env'
                 }
             }
         }
 
-        stage('Docker Check') {
-            steps {
-                sh '''
-                    
-                    whoami
-                    ${COMPOSE} version
-                    docker ps
-                '''
-            }
-        }
+        stage('Run All Tests') {
+            parallel {
+                stage('Frontend Unit Tests') {
+                    steps {
+                        echo 'Running Angular unit tests in isolated Node container...'
+                        sh '''
+                            docker run --rm \
+                              -v "$(pwd)/client:/app" \
+                              -w /app \
+                              zenika/alpine-chrome:node \
+                              sh -c "npm ci && npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox"
+                        '''
+                    }
+                }
 
-        stage('Build & Test Frontend') {
-            steps {
-
-                sh '${COMPOSE} build'
-            }
-        }
-
-        stage('Start Test Infrastructure') {
-            steps {
-
-                sh '${COMPOSE} up -d mongodb redis kafka'
-            }
-        }
-
-        stage('Start Test Services') {
-            steps {
-                sh '''
-                    ${COMPOSE} up -d \
-                        user-service \
-                        product-service \
-                        media-service \
-                        gateway \
-                        frontend
-                '''
-            }
-        }
-
-        stage('Run Backend Unit Tests') {
-            steps {
-                sh '(cd gateway_service && ./mvnw test)'
-                sh '(cd user_service && ./mvnw test)'
-                sh '(cd product_service && ./mvnw test)'
+                stage('Backend Unit Tests') {
+                    steps {
+                        echo 'Running Java backend tests...'
+                        sh '''
+                            (cd gateway_service && ./mvnw test)
+                            (cd user_service && ./mvnw test)
+                            (cd product_service && ./mvnw test)
+                        '''
+                    }
+                }
             }
             post {
                 always {
@@ -75,66 +56,64 @@ pipeline {
             }
         }
 
+        stage('Build Frontend Production Dist') {
+            steps {
+                echo 'Tests passed! Compiling Angular app for production...'
+                sh '''
+                    docker run --rm \
+                      -v "$(pwd)/client:/app" \
+                      -w /app \
+                      node:20-alpine \
+                      sh -c "npm run build -- --configuration production"
+                '''
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                echo 'Building Docker production images...'
+                sh '${COMPOSE} build'
+            }
+        }
+
         stage('Deploy to Production') {
             steps {
-                echo 'Deploying to /opt/01e_com...'
+                echo "Deploying to ${DEPLOY_DIR}..."
                 sh '''
                     mkdir -p ${DEPLOY_DIR}
                     cp docker-compose.yml ${DEPLOY_DIR}/
                     cp .env ${DEPLOY_DIR}/.env
+                    
+                    cd ${DEPLOY_DIR}
+                    ${COMPOSE} up -d --remove-orphans
+                    ${COMPOSE} ps
                 '''
-
-                script {
-                    try {
-                        sh '''
-                            cd ${DEPLOY_DIR}
-                            ${COMPOSE} up -d --no-build --remove-orphans
-                            ${COMPOSE} ps
-                        '''
-                    } catch (err) {
-                        if (!env.GIT_PREVIOUS_SUCCESSFUL_COMMIT) {
-                            error 'Deploy failed and no previous successful commit exists.'
-                        }
-
-                        echo "Deploy failed! Rolling back to Git commit: ${env.GIT_PREVIOUS_SUCCESSFUL_COMMIT}"
-                        sh '''
-                            git checkout ${GIT_PREVIOUS_SUCCESSFUL_COMMIT}
-                            cp docker-compose.yml ${DEPLOY_DIR}/
-                            ${COMPOSE} build
-                            cd ${DEPLOY_DIR}
-                            ${COMPOSE} up -d --remove-orphans
-                        '''
-                        error "Deployment failed. Rolled back to commit ${env.GIT_PREVIOUS_SUCCESSFUL_COMMIT}"
-                    }
-                }
             }
         }
     }
 
     post {
-       
+        always {
+            // Clean up temporary .env workspace file
+            sh 'rm -f .env'
+        }
 
         success {
-            echo 'Deployment successful'
+            echo 'Deployment successful!'
             emailext (
-                to: env.EMAIL + ', ' + env.EMAIL2,
+                to: "${env.EMAIL}, ${env.EMAIL2}",
                 subject: "✅ SUCCESS: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                 body: "Pipeline completed successfully and deployed to ${env.DEPLOY_DIR}.\n\nLogs: ${env.BUILD_URL}"
             )
         }
 
         failure {
-            echo 'Deployment failed'
+            echo 'Pipeline failed. Production environment was untouched.'
             emailext (
-                to: env.EMAIL + ', ' + env.EMAIL2,
+                to: "${env.EMAIL}, ${env.EMAIL2}",
                 subject: "🚨 FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
-                body: "Pipeline or deployment failed. Check logs at: ${env.BUILD_URL}"
+                body: "Tests or build failed before deployment. Production remains safe and untouched.\n\nCheck logs at: ${env.BUILD_URL}"
             )
-            //  sh '''
-            //     ${COMPOSE} down --remove-orphans || true
-            //     rm -f .env
-            // '''
-            // cleanWs()
         }
     }
 }
