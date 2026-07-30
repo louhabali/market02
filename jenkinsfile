@@ -26,6 +26,7 @@ pipeline {
         stage('Docker Check') {
             steps {
                 sh '''
+                    docker compose down --remove-orphans || true
                     whoami
                     ${COMPOSE} version
                     docker ps
@@ -35,12 +36,14 @@ pipeline {
 
         stage('Build & Test Frontend') {
             steps {
+
                 sh '${COMPOSE} build'
             }
         }
 
         stage('Start Test Infrastructure') {
             steps {
+
                 sh '${COMPOSE} up -d mongodb redis kafka'
             }
         }
