@@ -56,7 +56,7 @@ pipeline {
 
         stage('Build Docker Images') {
             steps {
-                echo 'Building Docker production images (including Angular frontend)...'
+                echo 'Building Docker production images (including Angular multi-stage build)...'
                 sh '${COMPOSE} build'
             }
         }

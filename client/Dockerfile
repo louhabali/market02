@@ -13,8 +13,8 @@ FROM nginx:alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY certs/ /etc/nginx/certs/
 
-# Note: Adjust 'client' if your output folder in angular.json is named differently (e.g. 01e_com or frontend)
-COPY --from=build /app/dist/client/browser /usr/share/nginx/html
+# Copies the browser build artifacts regardless of project name in dist
+COPY --from=build /app/dist/*/browser /usr/share/nginx/html/
 
 EXPOSE 80 443
 CMD ["nginx", "-g", "daemon off;"]
