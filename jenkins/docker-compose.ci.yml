@@ -10,7 +10,7 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /run/user/1034/docker.sock:/var/run/docker.sock
+      - /run/user/$(id -u)/docker.sock:/var/run/docker.sock
 
 volumes:
   jenkins_home:
