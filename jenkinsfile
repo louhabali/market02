@@ -108,14 +108,7 @@ pipeline {
     }
 
     post {
-        always {
-            //  c Clean workspace .env and temporary test containers
-            sh '''
-                ${COMPOSE} down --remove-orphans || true
-                rm -f .env
-            '''
-            cleanWs()
-        }
+       
 
         success {
             echo 'Deployment successful'
@@ -133,6 +126,11 @@ pipeline {
                 subject: "🚨 FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                 body: "Pipeline or deployment failed. Check logs at: ${env.BUILD_URL}"
             )
+             sh '''
+                ${COMPOSE} down --remove-orphans || true
+                rm -f .env
+            '''
+             cleanWs()
         }
     }
 }
