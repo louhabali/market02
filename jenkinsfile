@@ -29,10 +29,9 @@ pipeline {
                     steps {
                         echo 'Running Angular unit tests in isolated Node container...'
                         sh '''
-                            tar -C client -cf - . | docker run --rm -i \
-                              -w /app \
+                            tar -C client -cf - . | docker run --rm -i -u 0 \
                               zenika/alpine-chrome:with-node \
-                              sh -c "tar -xf - -C /app && npm ci && npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox"
+                              sh -c "mkdir -p /app && tar -xf - -C /app && cd /app && npm ci && npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox"
                         '''
                     }
                 }
@@ -59,11 +58,10 @@ pipeline {
             steps {
                 echo 'Tests passed! Compiling Angular app for production...'
                 sh '''
-                    # Runs npm run build inside container and streams the compiled dist back to workspace
-                    tar -C client -cf - . | docker run --rm -i \
-                      -w /app \
+                    mkdir -p client/dist/client/browser
+                    tar -C client -cf - . | docker run --rm -i -u 0 \
                       node:20-alpine \
-                      sh -c "tar -xf - -C /app && npm ci && npm run build -- --configuration production && tar -C dist/client/browser -cf - ." | tar -C client/dist/client/browser -xf - || true
+                      sh -c "mkdir -p /app && tar -xf - -C /app && cd /app && npm ci && npm run build -- --configuration production && tar -C dist/client/browser -cf - ." | tar -C client/dist/client/browser -xf -
                 '''
             }
         }
@@ -110,7 +108,7 @@ pipeline {
             emailext (
                 to: "${env.EMAIL}, ${env.EMAIL2}",
                 subject: "🚨 FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
-                body: "Tests or build failed before deployment. Production remains safe.\n\nCheck logs at: ${env.BUILD_URL}"
+                body: "Tests or build failed before deployment. Production remains safe and untouched.\n\nCheck logs at: ${env.BUILD_URL}"
             )
         }
     }
