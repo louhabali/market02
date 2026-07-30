@@ -32,7 +32,7 @@ pipeline {
                             docker run --rm \
                               -v "$(pwd)/client:/app" \
                               -w /app \
-                              zenika/alpine-chrome:node \
+                              zenika/alpine-chrome:with-node \
                               sh -c "npm ci && npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox"
                         '''
                     }
