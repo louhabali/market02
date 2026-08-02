@@ -1,0 +1,7 @@
+FROM sonarqube:lts-community
+
+# Expose default HTTP port
+EXPOSE 9000
+
+# Disable Elasticsearch bootstrap checks for easier local dev execution
+ENV SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
