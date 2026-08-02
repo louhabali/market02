@@ -1,6 +1,12 @@
 alouhab:
-./ngrok http 8080 --url=interbrachial-curt-wholeheartedly.ngrok-free.dev --host-header="localhost:8080"
+./ngrok http 8081 --url=interbrachial-curt-wholeheartedly.ngrok-free.dev --host-header="localhost:8081"
 iichi:
-./ngrok http 8080 --url=hardcore-tilt-narrow.ngrok-free.dev --host-header="localhost:8080" 
+./ngrok http 8080 --url=hardcore-tilt-narrow.ngrok-free.dev --host-header="localhost:8080" 
 
 smtp : 587
+ngrok setup :
+1 - token : ./ngrok config add-authtoken 2xoKwWBsP00KsseiXc8KmAmMplM_4AZtq4bH8adEDPggv5vF2
+
+2 - password getting :
+docker exec -it jenkins bash
+cat /var/jenkins_home/secrets/initialAdminPassword
