@@ -6,7 +6,7 @@ pipeline {
         COMPOSE    = 'docker compose -p 01e_com'
         DEPLOY_DIR = '/opt/01e_com'
         EMAIL      = 'louhabali@gmail.com'
-        EMAIL2     = 'ismailichi29@gmail.com'
+    
     }
 
     triggers {
@@ -89,7 +89,7 @@ pipeline {
         success {
             echo 'Deployment successful!'
             emailext (
-                to: "${env.EMAIL}, ${env.EMAIL2}",
+                to: "${env.EMAIL}",
                 subject: "✅ SUCCESS: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                 body: "Pipeline completed successfully and deployed to ${env.DEPLOY_DIR}.\n\nLogs: ${env.BUILD_URL}"
             )
@@ -98,7 +98,7 @@ pipeline {
         failure {
             echo 'Pipeline failed. Production environment was untouched.'
             emailext (
-                to: "${env.EMAIL}, ${env.EMAIL2}",
+                to: "${env.EMAIL}",
                 subject: "🚨 FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                 body: "Tests or build failed before deployment. Production remains safe and untouched.\n\nCheck logs at: ${env.BUILD_URL}"
             )
