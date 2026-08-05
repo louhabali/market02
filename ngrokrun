@@ -1,12 +1,40 @@
+
+JENKINS : 
 alouhab:
 ./ngrok http 8081 --url=interbrachial-curt-wholeheartedly.ngrok-free.dev --host-header="localhost:8081"
-iichi:
-./ngrok http 8080 --url=hardcore-tilt-narrow.ngrok-free.dev --host-header="localhost:8080" 
 
-smtp : 587
-ngrok setup :
-1 - token : ./ngrok config add-authtoken 2xoKwWBsP00KsseiXc8KmAmMplM_4AZtq4bH8adEDPggv5vF2
+SONARQUBE :
+Step 1: Generate a SonarQube User TokenOpen http://localhost:9000 and log in (default: admin / admin).
+Go to My Account 
+ Security tab.
+ type a name (e.g., jenkins-token), 
+ select Type: User Token
+ Step 2: Configure Jenkins Credentials & Plugin1.
+  Add SonarQube Plugin in JenkinsIn Jenkins
+  go to Manage Jenkins 
+  Plugins
+  Available Plugins.
+  Search for SonarQube Scanner 
+  and install it without restart
+  .2. Add the Token to Jenkins Credentials
+  Go to Manage Jenkins Credentials
+  System 
+   Global credentials (unrestricted).
+   Click Add Credentials:Kind: Secret textSecret: (Paste your SonarQube token from Step 1)
+   ID: sonar-tokenClick 
+   Create
+   .3. Configure SonarQube Server Link
+   Go to Manage Jenkins  System.
+   Scroll down to SonarQube servers.
+   Check Environment variables (injects server URL into build steps).
+   Click Add SonarQube:Name: SonarQube (Remember this exact capitalization)
+   Server URL: [http://host.docker.internal:9000](http://host.docker.internal:9000) (allows Jenkins inside Docker to reach host SonarQube)Server authentication token: Select sonar-token from the dropdown
+   .Click Save.4. 
+   Configure SonarQube Scanner Tool
+   Go to Manage Jenkins Tools.
+   Scroll to SonarQube Scanner installations.
+   Click Add SonarQube Scanner:
+   Name: SonarScannerCheck Install automatically and select the latest version.Click Save.
+   Step 3: Add sonar-project.properties Files
 
-2 - password getting :
-docker exec -it jenkins bash
 cat /var/jenkins_home/secrets/initialAdminPassword

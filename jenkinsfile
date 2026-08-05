@@ -1,111 +1,118 @@
-pipeline {
-    agent any
+    pipeline {
+        agent any
 
-    environment {
-        APP_NAME   = '01e_com'
-        COMPOSE    = 'docker compose -p 01e_com'
-        DEPLOY_DIR = '/opt/01e_com'
-        EMAIL      = 'louhabali@gmail.com'
-    
-    }
+        environment {
+            APP_NAME   = '01e_com'
+            COMPOSE    = 'docker compose -p 01e_com'
+            DEPLOY_DIR = '/opt/01e_com'
+            EMAIL      = 'louhabali@gmail.com'
+        
+        }
 
-    triggers {
-        githubPush()
-    }
+        triggers {
+            githubPush()
+        }
 
-    stages {
-        stage('Checkout & Setup Env') {
-            steps {
-                checkout scm
-                withCredentials([file(credentialsId: '01e-com-env-file', variable: 'ENV_FILE')]) {
-                    sh 'cp "$ENV_FILE" .env'
+        stages {
+            stage('Checkout & Setup Env') {
+                steps {
+                    checkout scm
+                    withCredentials([file(credentialsId: '01e-com-env-file', variable: 'ENV_FILE')]) {
+                        sh 'cp "$ENV_FILE" .env'
+                    }
                 }
             }
-        }
 
-       stage('Frontend Unit Tests') {
-    agent {
-        docker {
-            image 'zenika/alpine-chrome:with-node'
-            // Mount host's npm cache into container to speed up builds
-            args '-u 0 -v /tmp/npm-cache:/root/.npm'
-            reuseNode true
+        stage('Frontend Unit Tests') {
+        agent {
+            docker {
+                image 'zenika/alpine-chrome:with-node'
+                // Mount host's npm cache into container to speed up builds
+                args '-u 0 -v /tmp/npm-cache:/root/.npm'
+                reuseNode true
+            }
         }
-    }
-    steps {
-        echo 'Running Angular unit tests inside isolated container...'
-        dir('client') {
-            sh '''
-                npm config set audit false --location=project
-                npm config set fund false --location=project
-                
-                npm ci --no-audit --no-fund
-                npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox
-            '''
-        }
-    }
-}
-
-        stage('Backend Unit Tests') {
-            steps {
-                echo 'Running Java backend tests...'
+        steps {
+            echo 'Running Angular unit tests inside isolated container...'
+            dir('client') {
                 sh '''
-                    (cd gateway_service && ./mvnw test)
-                    (cd user_service && ./mvnw test)
-                    (cd product_service && ./mvnw test)
-                '''
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Build Docker Images') {
-            steps {
-                echo 'Building Docker production images (including Angular multi-stage build)...'
-                sh '${COMPOSE} build'
-            }
-        }
-
-        stage('Deploy to Production') {
-            steps {
-                echo "Deploying to ${DEPLOY_DIR}..."
-                sh '''
-                    mkdir -p ${DEPLOY_DIR}
-                    cp docker-compose.yml ${DEPLOY_DIR}/
-                    cp .env ${DEPLOY_DIR}/.env
+                    npm config set audit false --location=project
+                    npm config set fund false --location=project
                     
-                    cd ${DEPLOY_DIR}
-                    ${COMPOSE} up -d --remove-orphans
-                    ${COMPOSE} ps
+                    npm ci --no-audit --no-fund
+                    npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox
                 '''
             }
         }
     }
 
-    post {
-        always {
-            sh 'rm -f .env'
+            stage('Backend Unit Tests') {
+                steps {
+                    echo 'Running Java backend tests...'
+                    sh '''
+                        (cd gateway_service && ./mvnw test)
+                        (cd user_service && ./mvnw test)
+                        (cd product_service && ./mvnw test)
+                    '''
+                }
+                post {
+                    always {
+                        junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
+                    }
+                }
+            }
+            stage('SonarQube Code Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    // Triggers the scanner using the root sonar-project.properties file
+                    sh 'sonar-scanner'
+                }
+            }
+        }
+            stage('Build Docker Images') {
+                steps {
+                    echo 'Building Docker production images (including Angular multi-stage build)...'
+                    sh '${COMPOSE} build'
+                }
+            }
+
+            stage('Deploy to Production') {
+                steps {
+                    echo "Deploying to ${DEPLOY_DIR}..."
+                    sh '''
+                        mkdir -p ${DEPLOY_DIR}
+                        cp docker-compose.yml ${DEPLOY_DIR}/
+                        cp .env ${DEPLOY_DIR}/.env
+                        
+                        cd ${DEPLOY_DIR}
+                        ${COMPOSE} up -d --remove-orphans
+                        ${COMPOSE} ps
+                    '''
+                }
+            }
         }
 
-        success {
-            echo 'Deployment successful!'
-            emailext (
-                to: "${env.EMAIL}",
-                subject: "✅ SUCCESS: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
-                body: "Pipeline completed successfully and deployed to ${env.DEPLOY_DIR}.\n\nLogs: ${env.BUILD_URL}"
-            )
-        }
+        post {
+            always {
+                sh 'rm -f .env'
+            }
 
-        failure {
-            echo 'Pipeline failed. Production environment was untouched.'
-            emailext (
-                to: "${env.EMAIL}",
-                subject: "🚨 FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
-                body: "Tests or build failed before deployment. Production remains safe and untouched.\n\nCheck logs at: ${env.BUILD_URL}"
-            )
+            success {
+                echo 'Deployment successful!'
+                emailext (
+                    to: "${env.EMAIL}",
+                    subject: "✅ SUCCESS: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
+                    body: "Pipeline completed successfully and deployed to ${env.DEPLOY_DIR}.\n\nLogs: ${env.BUILD_URL}"
+                )
+            }
+
+            failure {
+                echo 'Pipeline failed. Production environment was untouched.'
+                emailext (
+                    to: "${env.EMAIL}",
+                    subject: "🚨 FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
+                    body: "Tests or build failed before deployment. Production remains safe and untouched.\n\nCheck logs at: ${env.BUILD_URL}"
+                )
+            }
         }
     }
-}
