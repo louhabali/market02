@@ -23,24 +23,28 @@ pipeline {
             }
         }
 
-        stage('Frontend Unit Tests') {
-            agent {
-                docker {
-                    image 'zenika/alpine-chrome:with-node'
-                    args '-u 0'
-                    reuseNode true
-                }
-            }
-            steps {
-                echo 'Running Angular unit tests inside isolated container...'
-                dir('client') {
-                    sh '''
-                        npm ci
-                        npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox
-                    '''
-                }
-            }
+       stage('Frontend Unit Tests') {
+    agent {
+        docker {
+            image 'zenika/alpine-chrome:with-node'
+            // Mount host's npm cache into container to speed up builds
+            args '-u 0 -v /tmp/npm-cache:/root/.npm'
+            reuseNode true
         }
+    }
+    steps {
+        echo 'Running Angular unit tests inside isolated container...'
+        dir('client') {
+            sh '''
+                npm config set audit false --location=project
+                npm config set fund false --location=project
+                
+                npm ci --no-audit --no-fund
+                npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox
+            '''
+        }
+    }
+}
 
         stage('Backend Unit Tests') {
             steps {
