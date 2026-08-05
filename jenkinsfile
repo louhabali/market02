@@ -61,14 +61,22 @@
                     }
                 }
             }
-            stage('SonarQube Code Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    // Triggers the scanner using the root sonar-project.properties file
-                    sh 'sonar-scanner'
-                }
-            }
+           stage('SonarQube Code Analysis') {
+    agent {
+        docker {
+            image 'sonarsource/sonar-scanner-cli:latest'
+            // Mount project directory & pass network settings to reach SonarQube
+            args '-u 0 --network host'
+            reuseNode true
         }
+    }
+    steps {
+        withSonarQubeEnv('SonarQube') {
+            // Runs sonar-scanner inside the isolated CLI container
+            sh 'sonar-scanner'
+        }
+    }
+}
             stage('Build Docker Images') {
                 steps {
                     echo 'Building Docker production images (including Angular multi-stage build)...'
