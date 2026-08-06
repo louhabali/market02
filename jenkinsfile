@@ -53,6 +53,7 @@
                         (cd gateway_service && ./mvnw test)
                         (cd user_service && ./mvnw test)
                         (cd product_service && ./mvnw test)
+                        
                     '''
                 }
                 post {
