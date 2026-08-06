@@ -61,18 +61,17 @@
                     }
                 }
             }
-           stage('SonarQube Code Analysis') {
+         stage('SonarQube Code Analysis') {
     agent {
         docker {
             image 'sonarsource/sonar-scanner-cli:latest'
-            // Mount project directory & pass network settings to reach SonarQube
-            args '-u 0 --network host'
+            // Map host.docker.internal to host-gateway so Docker can resolve it
+            args '-u 0 --add-host=host.docker.internal:host-gateway'
             reuseNode true
         }
     }
     steps {
         withSonarQubeEnv('SonarQube') {
-            // Runs sonar-scanner inside the isolated CLI container
             sh 'sonar-scanner'
         }
     }
