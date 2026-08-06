@@ -78,12 +78,20 @@
         }
     }
 }
-            stage('Build Docker Images') {
-                steps {
-                    echo 'Building Docker production images (including Angular multi-stage build)...'
-                    sh '${COMPOSE} build'
-                }
-            }
+           stage('Build & Package Java Applications') {
+    steps {
+        echo 'Building JAR files in respective service directories...'
+        sh '''
+            (cd gateway_service && ./mvnw clean package -DskipTests)
+            (cd user_service && ./mvnw clean package -DskipTests)
+            (cd product_service && ./mvnw clean package -DskipTests)
+            (cd media_service && ./mvnw clean package -DskipTests)
+        '''
+        
+        echo 'Building Docker images (takes ~2 seconds)...'
+        sh '${COMPOSE} build'
+    }
+}
 
             stage('Deploy to Production') {
                 steps {
