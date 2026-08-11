@@ -8,12 +8,14 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class MediaService {
 
     private static final Path UPLOAD_DIR = Paths.get("/app/uploads").toAbsolutePath().normalize();
-    private static final long MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+    private static final long MAX_SIZE = 2L * 1024 * 1024; 
+    private static final String UPLOAD_DIR_STRING = "/uploads/";
     private static final List<String> ALLOWED_MIME_TYPES = List.of("image/jpeg", "image/png", "image/webp","image/gif","image/x-avif","image/avif");
     // for single avatar upload
     public String uploadSingleAvatar(MultipartFile avatar) {
@@ -54,7 +56,7 @@ public class MediaService {
             }
 
             // Generate unique, safe filename using System time + hash
-            String fileName = System.currentTimeMillis() + "_" + Math.abs(originalFilename.hashCode()) + fileExtension;
+           String fileName = System.currentTimeMillis() + "_" + UUID.randomUUID().toString() + fileExtension;
             Path filePath = UPLOAD_DIR.resolve(fileName).normalize();
 
             
@@ -64,7 +66,7 @@ public class MediaService {
 
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            return "/uploads/" + fileName;
+            return UPLOAD_DIR_STRING + fileName;
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to store file: " + e.getMessage(), e);
@@ -93,8 +95,8 @@ public class MediaService {
             }
 
            
-            if (fileName.startsWith("/uploads/")) {
-                fileName = fileName.substring("/uploads/".length());
+            if (fileName.startsWith(UPLOAD_DIR_STRING)) {
+                fileName = fileName.substring(UPLOAD_DIR_STRING.length());
             }
 
             Path filePath = UPLOAD_DIR.resolve(fileName).normalize();

@@ -18,7 +18,6 @@ public class UserEventConsumer {
             groupId = "product-group"
     )
     public void consume(UserDeletedEvent event) {
-        System.out.println("Received UserDeletedEvent: " + event);
         productService.deleteProductsByUserId(event.getUserId());
     }
 }

@@ -21,9 +21,11 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 @ControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     // Handle invalid DTO validation errors 400
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -144,7 +146,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleAll(Exception ex) {
         // Log the exception for debugging (optional)
-        ex.printStackTrace();
+        logger.error("An unexpected error occurred: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Something went wrong. Please try again later.");

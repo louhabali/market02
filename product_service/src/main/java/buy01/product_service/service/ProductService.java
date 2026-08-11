@@ -26,7 +26,7 @@ public class ProductService {
 
     private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
             "image/jpeg", "image/png", "image/webp", "image/gif");
-    private static final long MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
+    private static final long MAX_FILE_SIZE_BYTES = 2L * 1024 * 1024; // 2MB
     private static final int MAX_IMAGES_COUNT = 5;
     
 
@@ -125,7 +125,7 @@ public class ProductService {
     }
 
     public void deleteProductsByUserId(String userId) {
-        System.out.println("DELETAAAAAAAAAAWWWWWWWWWWWWWWWWWWWWWWWWWW :" + userId);
+       
         if (userId != null && !userId.isBlank()) {
             repository.deleteByUserId(userId);
         }

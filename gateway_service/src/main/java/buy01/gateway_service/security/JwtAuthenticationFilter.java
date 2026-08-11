@@ -35,7 +35,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         if (HttpMethod.OPTIONS.equals(method)) {
             return chain.filter(exchange);
         }
-        System.out.println("Request Path: " + path + ", Method: " + method);
+      
         // Public endpoints
         if (path.startsWith("/api/auth/login") ||
                 path.startsWith("/api/auth/register") ||
