@@ -65,7 +65,7 @@ pipeline {
     agent {
         docker {
             image 'sonarsource/sonar-scanner-cli:latest'
-            args '-u 0 --net=host'
+            args '-u 0 --add-host=host.docker.internal:host-gateway'
             reuseNode true
         }
     }
