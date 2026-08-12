@@ -70,9 +70,12 @@ pipeline {
                 }
             }
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh 'sonar-scanner'
-                }
+              withSonarQubeEnv('SonarQube') {
+            sh '''
+                export SONAR_HOST_URL="http://127.0.0.1:9000"
+                sonar-scanner
+            '''
+        }
                 
                 // Enforce Quality Gate check; abort pipeline if standards are not met
                 timeout(time: 5, unit: 'MINUTES') {
