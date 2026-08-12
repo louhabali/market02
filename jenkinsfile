@@ -61,7 +61,7 @@ pipeline {
             }
         }
 
-        stage('SonarQube Code Analysis & Quality Gate') {
+   stage('SonarQube Code Analysis & Quality Gate') {
     agent {
         docker {
             image 'sonarsource/sonar-scanner-cli:latest'
@@ -73,7 +73,8 @@ pipeline {
         withSonarQubeEnv('SonarQube') {
             sh '''
                 export SONAR_HOST_URL="http://127.0.0.1:9000"
-                sonar-scanner -Dsonar.token="${SONAR_AUTH_TOKEN}"
+                unset SONAR_LOGIN
+                sonar-scanner -Dsonar.token="${SONAR_AUTH_TOKEN}" -Dsonar.login=
             '''
         }
         
