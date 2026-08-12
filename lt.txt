@@ -1,0 +1,15 @@
+# Download the raw executable binary to your current directory
+curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
+
+# Make it executable
+chmod +x cloudflared
+./cloudflared tunnel --protocol http2 --http-host-header "localhost" --url http://127.0.0.1:8081
+// with closing terminal 
+nohup ./cloudflared tunnel --url http://localhost:8085 > cloudflare.log 2>&1 &
+
+
+// docker 
+docker network create dev-network
+// 
+docker network connect dev-network jenkins
+docker network connect dev-network sonarqube
