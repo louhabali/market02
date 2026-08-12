@@ -73,7 +73,6 @@ pipeline {
         withCredentials([string(credentialsId: 'sonar-token', variable: 'MY_SONAR_TOKEN')]) {
             withSonarQubeEnv('SonarQube') {
                 sh '''
-                    export SONAR_HOST_URL="http://127.0.0.1:9000"
                     sonar-scanner -Dsonar.login="${MY_SONAR_TOKEN}"
                 '''
             }
