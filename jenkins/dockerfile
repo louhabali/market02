@@ -1,4 +1,4 @@
-FROM jenkins/jenkins:lt
+FROM jenkins/jenkins:lts
 
 USER root
 
