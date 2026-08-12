@@ -61,12 +61,19 @@ pipeline {
             }
         }
 stage('SonarQube Analysis & Quality Gate') {
+    agent {
+        docker {
+            image 'sonarsource/sonar-scanner-cli:latest'
+            args '--entrypoint=""'
+            reuseNode true
+        }
+    }
     steps {
         script {
             withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
-                        npx --yes @sonar/scan@4.3.8 \
+                        sonar-scanner \
                           -Dsonar.host.url=http://172.17.0.1:9000 \
                           -Dsonar.token=${SONAR_TOKEN}
                     '''
