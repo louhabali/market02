@@ -60,30 +60,21 @@ pipeline {
                 }
             }
         }
-
- stage('SonarQube Code Analysis & Quality Gate') {
-    agent {
-        docker {
-            image 'sonarsource/sonar-scanner-cli:latest'
-            args '-u 0 --add-host=host.docker.internal:host-gateway'
-            reuseNode true
-        }
-    }
+stage('SonarQube Analysis & Quality Gate') {
     steps {
-        withCredentials([string(credentialsId: 'sonar-token', variable: 'MY_SONAR_TOKEN')]) {
-            withSonarQubeEnv('SonarQube') {
-                sh '''
-                    sonar-scanner -Dsonar.login="${MY_SONAR_TOKEN}"
-                '''
-            }
-        }
-        
-        timeout(time: 5, unit: 'MINUTES') {
-            script {
-                def qg = waitForQualityGate()
-                if (qg.status != 'OK') {
-                    error "Pipeline aborted due to Quality Gate failure: ${qg.status}"
+        script {
+            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        npx --yes @sonar/scan@4.3.8 \
+                          -Dsonar.host.url=http://172.17.0.1:9000 \
+                          -Dsonar.token=${SONAR_TOKEN}
+                    '''
                 }
+            }
+
+            timeout(time: 5, unit: 'MINUTES') {
+                waitForQualityGate abortPipeline: true
             }
         }
     }
