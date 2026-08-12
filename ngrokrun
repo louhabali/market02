@@ -20,7 +20,11 @@ Go to My Account
    Scroll to SonarQube Scanner installations.
    Name: SonarScannerCheck
     Install automatically and select the latest version
-    
+
    Step 3: Add sonar-project.properties Files
 
 cat /var/jenkins_home/secrets/initialAdminPassword
+
+
+#  get the base64 string:
+base64 -w 0 .env
