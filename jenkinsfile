@@ -62,32 +62,31 @@ pipeline {
         }
 
         stage('SonarQube Code Analysis & Quality Gate') {
-            agent {
-                docker {
-                    image 'sonarsource/sonar-scanner-cli:latest'
-                    args '-u 0 --net=host'
-                    reuseNode true
-                }
-            }
-            steps {
-              withSonarQubeEnv('SonarQube') {
+    agent {
+        docker {
+            image 'sonarsource/sonar-scanner-cli:latest'
+            args '-u 0 --net=host'
+            reuseNode true
+        }
+    }
+    steps {
+        withSonarQubeEnv('SonarQube') {
             sh '''
                 export SONAR_HOST_URL="http://127.0.0.1:9000"
-                sonar-scanner
+                sonar-scanner -Dsonar.token="${SONAR_AUTH_TOKEN}"
             '''
         }
-                
-                // Enforce Quality Gate check; abort pipeline if standards are not met
-                timeout(time: 5, unit: 'MINUTES') {
-                    script {
-                        def qg = waitForQualityGate()
-                        if (qg.status != 'OK') {
-                            error "Pipeline aborted due to Quality Gate failure: ${qg.status}"
-                        }
-                    }
+        
+        timeout(time: 5, unit: 'MINUTES') {
+            script {
+                def qg = waitForQualityGate()
+                if (qg.status != 'OK') {
+                    error "Pipeline aborted due to Quality Gate failure: ${qg.status}"
                 }
             }
         }
+    }
+}
 
         stage('Build & Package Java Applications') {
             steps {
