@@ -23,10 +23,10 @@ pipeline {
         }
 
         stage('Frontend Unit Tests & Coverage') {
-            docker {
-                any {
+            agent {
+                docker {
                     image 'zenika/alpine-chrome:with-node'
-                    args '-u 0 '
+                    args '-u 0 -v /tmp/npm-cache:/root/.npm'
                     reuseNode true
                 }
             }
