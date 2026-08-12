@@ -26,7 +26,7 @@ pipeline {
             agent {
                 docker {
                     image 'zenika/alpine-chrome:with-node'
-                    args '-u 0 -v /tmp/npm-cache:/root/.npm'
+                    args '-u 0 '
                     reuseNode true
                 }
             }
