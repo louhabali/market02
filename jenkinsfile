@@ -40,22 +40,23 @@ pipeline {
                     }
                     steps {
                         dir('client') {
-                            sh '''
-                                sh 'npm ci --no-audit --no-fund && npm run test:ci'
-                            '''
+                            // Fixed: Removed the redundant nested 'sh' call
+                            sh 'npm ci --no-audit --no-fund && npm run test:ci'
                         }
                     }
                 }
 
                 stage('Java Microservices Unit Tests') {
-                 steps {
-                    sh '''
-                        for dir in gateway_service user_service product_service media_service; do
-                        (cd "$dir" && chmod +x mvnw && ./mvnw clean test)
-                        done
-                    '''
-                     }
-                }
+                    steps {
+                        sh '''
+                            for dir in gateway_service user_service product_service media_service; do
+                                echo "=========================================="
+                                echo " Testing: $dir"
+                                echo "=========================================="
+                                (cd "$dir" && chmod +x mvnw && ./mvnw clean test)
+                            done
+                        '''
+                    }
                     post {
                         always {
                             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
@@ -88,7 +89,6 @@ pipeline {
         }
 
         stage('SonarQube Quality Gate') {
-            // Runs on the main Jenkins host so the webhook callback reaches waitForQualityGate
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
