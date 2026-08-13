@@ -71,7 +71,7 @@ pipeline {
             agent {
                 docker {
                     image 'sonarsource/sonar-scanner-cli:latest'
-                    args '--entrypoint="" --network ci_net'
+                    args '--entrypoint="" --network ci-platform_ci_net'
                     reuseNode true
                 }
             }
