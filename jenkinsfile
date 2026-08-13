@@ -2,10 +2,11 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME   = '01e_com'
-        COMPOSE    = 'docker compose -p 01e_com'
-        DEPLOY_DIR = '/opt/01e_com'
-        EMAIL      = 'louhabali@gmail.com'
+        APP_NAME        = '01e_com'
+        COMPOSE         = 'docker compose -p 01e_com'
+        DEPLOY_DIR      = '/opt/01e_com'
+        EMAIL           = 'louhabali@gmail.com'
+        SONAR_HOST_URL  = 'http://sonarqube:9000'
     }
 
     triggers {
@@ -22,94 +23,95 @@ pipeline {
             }
         }
 
-        stage('Frontend Unit Tests & Coverage') {
+        stage('Parallel Automated Testing') {
+            parallel {
+                stage('Angular Frontend Tests') {
+                    agent {
+                        docker {
+                            image 'zenika/alpine-chrome:with-node'
+                            args '-u 0 -v /tmp/npm-cache:/root/.npm'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        dir('client') {
+                            sh '''
+                                npm config set audit false --location=project
+                                npm config set fund false --location=project
+                                npm ci --no-audit --no-fund
+                                npx ng test --watch=false --code-coverage --browsers=ChromeHeadlessNoSandbox
+                            '''
+                        }
+                    }
+                }
+
+                stage('Java Microservices Unit Tests') {
+                    steps {
+                        sh '''
+                            for dir in gateway_service user_service product_service media_service; do
+                                (cd "$dir" && ./mvnw clean test) &
+                            done
+                            wait
+                        '''
+                    }
+                    post {
+                        always {
+                            junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('SonarQube Quality Gate') {
             agent {
                 docker {
-                    image 'zenika/alpine-chrome:with-node'
-                    args '-u 0 -v /tmp/npm-cache:/root/.npm'
+                    image 'sonarsource/sonar-scanner-cli:latest'
+                    args '--entrypoint="" --network ci_net'
                     reuseNode true
                 }
             }
             steps {
-                echo 'Running Angular unit tests with code coverage...'
-                dir('client') {
-                    sh '''
-                        npm config set audit false --location=project
-                        npm config set fund false --location=project
-                        
-                        npm ci --no-audit --no-fund
-                        npx ng test --watch=false --code-coverage --browsers=ChromeHeadlessNoSandbox
-                    '''
+                script {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        withSonarQubeEnv('SonarQube') {
+                            sh """
+                                sonar-scanner \
+                                  -Dsonar.host.url=${env.SONAR_HOST_URL} \
+                                  -Dsonar.token=${SONAR_TOKEN}
+                            """
+                        }
+                    }
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitForQualityGate abortPipeline: true
+                    }
                 }
             }
         }
 
-        stage('Backend Unit Tests & JaCoCo Coverage') {
+        stage('Build Artifacts & Container Images') {
             steps {
-                echo 'Running Java backend tests and generating JaCoCo coverage reports...'
+                echo 'Building production JAR files concurrently...'
                 sh '''
-                    (cd gateway_service && ./mvnw clean test)
-                    (cd user_service && ./mvnw clean test)
-                    (cd product_service && ./mvnw clean test)
-                    (cd media_service && ./mvnw clean test)
+                    for dir in gateway_service user_service product_service media_service; do
+                        (cd "$dir" && ./mvnw package -DskipTests -T 1C) &
+                    done
+                    wait
                 '''
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
-                }
-            }
-        }
-stage('SonarQube Analysis & Quality Gate') {
-    agent {
-        docker {
-            image 'sonarsource/sonar-scanner-cli:latest'
-            args '--entrypoint=""'
-            reuseNode true
-        }
-    }
-    steps {
-        script {
-            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        sonar-scanner \
-                          -Dsonar.host.url=http://172.17.0.1:9000 \
-                          -Dsonar.token=${SONAR_TOKEN}
-                    '''
-                }
-            }
 
-            timeout(time: 5, unit: 'MINUTES') {
-                waitForQualityGate abortPipeline: true
-            }
-        }
-    }
-}
-
-        stage('Build & Package Java Applications') {
-            steps {
-                echo 'Building production JAR files...'
-                sh '''
-                    (cd gateway_service && ./mvnw clean package -DskipTests)
-                    (cd user_service && ./mvnw clean package -DskipTests)
-                    (cd product_service && ./mvnw clean package -DskipTests)
-                    (cd media_service && ./mvnw clean package -DskipTests)
-                '''
-                
                 echo 'Building Docker container images...'
                 sh '${COMPOSE} build'
             }
         }
 
-        stage('Deploy to Production') {
+        stage('Deploy Application') {
             steps {
-                echo "Deploying to ${DEPLOY_DIR}..."
+                echo "Deploying service stack to ${DEPLOY_DIR}..."
                 sh '''
                     mkdir -p ${DEPLOY_DIR}
                     cp docker-compose.yml ${DEPLOY_DIR}/
                     cp .env ${DEPLOY_DIR}/.env
-                    
+
                     cd ${DEPLOY_DIR}
                     ${COMPOSE} up -d --remove-orphans
                     ${COMPOSE} ps
@@ -122,22 +124,18 @@ stage('SonarQube Analysis & Quality Gate') {
         always {
             sh 'rm -f .env'
         }
-
         success {
-            echo 'Deployment successful!'
             emailext (
                 to: "${env.EMAIL}",
                 subject: "✅ SUCCESS: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                 body: "Pipeline completed successfully and deployed to ${env.DEPLOY_DIR}.\n\nLogs: ${env.BUILD_URL}"
             )
         }
-
         failure {
-            echo 'Pipeline failed. Production environment remains untouched.'
             emailext (
                 to: "${env.EMAIL}",
                 subject: "🚨 FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
-                body: "Tests, Quality Gate, or build failed before deployment. Production remains safe and untouched.\n\nCheck logs at: ${env.BUILD_URL}"
+                body: "Pipeline execution failed. Production environment was not modified.\n\nLogs: ${env.BUILD_URL}"
             )
         }
     }
