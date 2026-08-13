@@ -17,7 +17,7 @@ services:
   gateway:
     build: 
       context: ./gateway_service
-      dockerfile: Dockerfile
+      dockerfile: dockerfile
     container_name: gateway-service
     ports:
       - "8089:8089"
@@ -36,7 +36,7 @@ services:
   user-service:
     build: 
         context: ./user_service
-        dockerfile: Dockerfile
+        dockerfile: dockerfile
     container_name: user-service
     depends_on:
       - mongodb
@@ -53,7 +53,7 @@ services:
   product-service:
     build: 
       context: ./product_service
-      dockerfile: Dockerfile
+      dockerfile: dockerfile
     container_name: product-service
     depends_on:
       - mongodb
@@ -70,7 +70,7 @@ services:
   media-service:
     build: 
       context: ./media_service
-      dockerfile: Dockerfile
+      dockerfile: dockerfile
     container_name: media-service
     expose:
       - "8083"
