@@ -48,14 +48,14 @@ pipeline {
                 }
 
                 stage('Java Microservices Unit Tests') {
-                    steps {
-                        sh '''
-                            for dir in gateway_service user_service product_service media_service; do
-                                (cd "$dir" && chmod +x mvnw && ./mvnw clean test) &
-                            done
-                            wait
-                        '''
-                    }
+                 steps {
+                    sh '''
+                        for dir in gateway_service user_service product_service media_service; do
+                        (cd "$dir" && chmod +x mvnw && ./mvnw clean test)
+                        done
+                    '''
+                     }
+                }
                     post {
                         always {
                             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
