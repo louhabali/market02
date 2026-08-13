@@ -2,14 +2,31 @@
 workflow-aggregator:latest
 pipeline-stage-view:latest
 pipeline-graph-analysis:latest
+pipeline-graph-view:latest
 dashboard-view:latest
+
+# --- Modern Themes, Design System & Icons ---
+theme-manager:latest
+dark-theme:latest
+material-theme:latest
+ionicon-api:latest
+font-awesome-api:latest
+bootstrap5-api:latest
+echarts-api:latest
+
+# --- Enhanced Build Logs & Console UI ---
+timestamper:latest
+ansi color:latest
+console-tail-plugin:latest
 
 # --- GitHub Integration ---
 github:latest
 github-branch-source:latest
+git:latest
 
 # --- Code Quality & Static Analysis ---
 sonar:latest
+warnings-ng:latest
 
 # --- Test & Code Coverage UI Reports ---
 junit:latest
@@ -20,8 +37,9 @@ test-results-analyzer:latest
 credentials-binding:latest
 plain-credentials:latest
 
-# --- Build Tools & Notifications ---
+# --- Build Tools & Utilities ---
 maven-plugin:latest
 docker-workflow:latest
+ws-cleanup:latest
 email-ext:latest
 mailer:latest
