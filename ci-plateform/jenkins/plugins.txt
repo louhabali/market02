@@ -1,11 +1,30 @@
+# --- Modern UI / Blue Ocean Suite ---
+blueocean:latest
+blueocean-autofavor:latest
+blueocean-commons:latest
+blueocean-config:latest
+blueocean-dashboard:latest
+blueocean-events:latest
+blueocean-git-pipeline:latest
+blueocean-github-pipeline:latest
+blueocean-i18n:latest
+blueocean-jira:latest
+blueocean-jwt:latest
+blueocean-personalization:latest
+blueocean-pipeline-api-impl:latest
+blueocean-pipeline-editor:latest
+blueocean-rest-impl:latest
+blueocean-rest:latest
+blueocean-web:latest
+
+# --- Modern Pipeline Graph View ---
+pipeline-graph-view:latest
+
 # --- Core Pipeline & UI Extensions ---
 workflow-aggregator:latest
 pipeline-stage-view:latest
 pipeline-graph-analysis:latest
-pipeline-graph-view:latest
 dashboard-view:latest
-
-# --- Modern Themes, Design System & Icons ---
 theme-manager:latest
 dark-theme:latest
 material-theme:latest
@@ -14,10 +33,10 @@ font-awesome-api:latest
 bootstrap5-api:latest
 echarts-api:latest
 
-# --- Enhanced Build Logs & Console UI ---
+# --- Console & Build Utilities ---
 timestamper:latest
-ansi color:latest
-console-tail-plugin:latest
+ansicolor:latest
+ws-cleanup:latest
 
 # --- GitHub Integration ---
 github:latest
@@ -37,9 +56,8 @@ test-results-analyzer:latest
 credentials-binding:latest
 plain-credentials:latest
 
-# --- Build Tools & Utilities ---
+# --- Build Tools & Notifications ---
 maven-plugin:latest
 docker-workflow:latest
-ws-cleanup:latest
 email-ext:latest
 mailer:latest
