@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    options {
+        ansiColor('xterm')
+        timestamps()
+    }
+
     environment {
         APP_NAME        = '01e_com'
         COMPOSE         = 'docker compose -p 01e_com'
@@ -49,7 +54,7 @@ pipeline {
                     steps {
                         sh '''
                             for dir in gateway_service user_service product_service media_service; do
-                                (cd "$dir" && ./mvnw clean test) &
+                                (cd "$dir" && chmod +x mvnw && ./mvnw clean test) &
                             done
                             wait
                         '''
@@ -57,13 +62,14 @@ pipeline {
                     post {
                         always {
                             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
+                            jacoco execPattern: '**/target/*.exec'
                         }
                     }
                 }
             }
         }
 
-        stage('SonarQube Quality Gate') {
+        stage('SonarQube Scanner Analysis') {
             agent {
                 docker {
                     image 'sonarsource/sonar-scanner-cli:latest'
@@ -72,19 +78,23 @@ pipeline {
                 }
             }
             steps {
-                script {
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        withSonarQubeEnv('SonarQube') {
-                            sh """
-                                sonar-scanner \
-                                  -Dsonar.host.url=${env.SONAR_HOST_URL} \
-                                  -Dsonar.token=${SONAR_TOKEN}
-                            """
-                        }
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            sonar-scanner \
+                              -Dsonar.host.url=${env.SONAR_HOST_URL} \
+                              -Dsonar.token=${SONAR_TOKEN}
+                        """
                     }
-                    timeout(time: 5, unit: 'MINUTES') {
-                        waitForQualityGate abortPipeline: true
-                    }
+                }
+            }
+        }
+
+        stage('SonarQube Quality Gate') {
+            // Runs on the main Jenkins host so the webhook callback reaches waitForQualityGate
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
