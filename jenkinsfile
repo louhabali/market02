@@ -41,10 +41,7 @@ pipeline {
                     steps {
                         dir('client') {
                             sh '''
-                                npm config set audit false --location=project
-                                npm config set fund false --location=project
-                                npm ci --no-audit --no-fund
-                                npx ng test --watch=false --code-coverage --browsers=ChromeHeadlessNoSandbox
+                                sh 'npm ci --no-audit --no-fund && npm run test:ci'
                             '''
                         }
                     }

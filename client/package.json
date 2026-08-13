@@ -6,6 +6,7 @@
     "esbuild": "0.25.12"
   },
   "scripts": {
+    "test:ci": "ng test --watch=false --code-coverage --browsers=ChromeHeadlessNoSandbox",
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
