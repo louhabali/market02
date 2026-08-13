@@ -1,0 +1,27 @@
+# --- Core Pipeline & UI Extensions ---
+workflow-aggregator:latest
+pipeline-stage-view:latest
+pipeline-graph-analysis:latest
+dashboard-view:latest
+
+# --- GitHub Integration ---
+github:latest
+github-branch-source:latest
+
+# --- Code Quality & Static Analysis ---
+sonar:latest
+
+# --- Test & Code Coverage UI Reports ---
+junit:latest
+jacoco:latest
+test-results-analyzer:latest
+
+# --- Credentials & Security ---
+credentials-binding:latest
+plain-credentials:latest
+
+# --- Build Tools & Notifications ---
+maven-plugin:latest
+docker-workflow:latest
+email-ext:latest
+mailer:latest

@@ -22,19 +22,9 @@ RUN apt-get update && \
 
 USER jenkins
 
-RUN jenkins-plugin-cli --plugins \
-    git \
-    workflow-aggregator \
-    docker-workflow \
-    sonar \
-    email-ext \
-    plain-credentials \
-    credentials-binding \
-    dark-theme \
-    theme-manager \
-    pipeline-stage-view \
-    timestamper \
-    ws-cleanup
+# Copy plugins list and install via plugin manager
+COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
+RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 
 # Copy automated configuration scripts into Jenkins init directory
 COPY --chown=jenkins:jenkins init.groovy.d/ /var/jenkins_home/init.groovy.d/
