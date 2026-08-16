@@ -3,7 +3,7 @@ package buy01.cart_service.service;
 import buy01.cart_service.dto.AddToCartRequest;
 import buy01.cart_service.model.CartItem;
 import buy01.cart_service.model.ShoppingCart;
-import buy01.cart_service.repository.CartRepository;
+import buy01.cart_service.repo.CartRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

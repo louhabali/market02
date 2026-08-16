@@ -1,4 +1,4 @@
-package buy01.cart_service.repository;
+package buy01.cart_service.repo;
 
 import buy01.cart_service.model.ShoppingCart;
 import org.springframework.data.repository.CrudRepository;
