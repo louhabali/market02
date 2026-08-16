@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -17,8 +18,7 @@ import java.util.List;
 public class CreateOrderRequest {
 
     @NotEmpty(message = "Order must contain at least one item")
-    @Valid
-    private List<OrderItemDto> items;
+    private List<@Valid OrderItemDto> items;
 
     @NotNull(message = "Shipping address is required")
     @Valid

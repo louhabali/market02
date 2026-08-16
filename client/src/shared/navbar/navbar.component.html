@@ -28,6 +28,17 @@
 
   <!-- Right Side: User Profile & Actions -->
   <div class="flex items-center gap-4">
+
+    <!-- Shopping Cart Button -->
+    <a routerLink="/cart" 
+       routerLinkActive="border-[#001830] bg-[#001830]/5 text-[#001830]"
+       title="View Shopping Cart"
+       class="relative flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#001830]/15 text-[#001830] hover:bg-[#001830] hover:text-white transition-all text-xs font-mono font-bold uppercase tracking-wider group shadow-xs">
+      <svg class="w-4 h-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+      </svg>
+      <span>Cart</span>
+    </a>
     
     <!-- System Access Status Pill -->
     <span class="hidden md:inline-block bg-[#001830]/5 text-[#001830] text-[10px] font-mono uppercase tracking-widest px-3 py-1.5 font-bold rounded-md border border-[#001830]/10">
@@ -53,7 +64,7 @@
     </div>
 
     <!-- Exit / Sign Out -->
-    <button  (click)="logout()" 
+    <button (click)="logout()" 
             title="Sign Out"
             class="text-[10px] font-mono font-bold uppercase tracking-widest text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-md transition-colors">
       Exit

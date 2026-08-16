@@ -58,6 +58,16 @@ spring:
           predicates:
             - Path=/api/uploads/**
 
+        - id: cart-service
+          uri: ${CART_SERVICE_URL:http://cart-service:8085}
+          predicates:
+            - Path=/api/v1/cart/**
+            
+        - id: order-service
+          uri: ${ORDER_SERVICE_URL:http://order-service:8084}
+          predicates:
+            - Path=/api/v1/orders/**
+
 jwt:
   secret: ${JWT_SECRET:mydummysecretkey_for_testing_purposes_only_please_change_this_in_production}
   

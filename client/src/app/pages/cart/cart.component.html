@@ -1,0 +1,81 @@
+<div class="min-h-screen bg-slate-900 text-slate-100 py-10 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-3xl font-extrabold tracking-tight text-white mb-8 border-b border-slate-700 pb-4">
+      Shopping Cart
+    </h1>
+
+    @if (cartService.cart().items.length === 0) {
+      <div class="bg-slate-800 rounded-xl p-12 text-center border border-slate-700 shadow-xl">
+        <svg class="mx-auto h-16 w-16 text-slate-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        </svg>
+        <h3 class="text-xl font-bold text-white mb-2">Your cart is empty</h3>
+        <p class="text-slate-400 mb-6">Looks like you haven't added any items to your cart yet.</p>
+        <a routerLink="/products" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition shadow-lg">
+          Explore Products
+        </a>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Cart Items List -->
+        <div class="lg:col-span-2 space-y-4">
+          @for (item of cartService.cart().items; track item.productId) {
+            <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-4 sm:p-5 flex items-center justify-between shadow-md hover:border-slate-600 transition">
+              <div class="flex items-center space-x-4">
+                @if (item.imageUrl) {
+                  <img [src]="item.imageUrl" [alt]="item.productName" class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover bg-slate-950 border border-slate-700">
+                } @else {
+                  <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-slate-950 border border-slate-700 flex items-center justify-center text-slate-500">
+                    No Image
+                  </div>
+                }
+                <div>
+                  <h3 class="font-bold text-white text-base sm:text-lg">{{ item.productName }}</h3>
+                  <p class="text-slate-400 text-sm mb-1">Unit Price: ${{ item.price }}</p>
+                  <span class="inline-block bg-slate-700/60 text-blue-400 text-xs px-2.5 py-0.5 rounded-full font-medium">
+                    Qty: {{ item.quantity }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="text-right">
+                <p class="text-lg font-extrabold text-white mb-2">
+                  ${{ (item.price * item.quantity).toFixed(2) }}
+                </p>
+                <button (click)="removeItem(item.productId)" class="text-rose-400 hover:text-rose-300 text-xs sm:text-sm font-semibold transition">
+                  Remove
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Order Summary Sidebar -->
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 h-fit shadow-xl">
+          <h2 class="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-3">Order Summary</h2>
+          
+          <div class="space-y-3 text-sm text-slate-300 mb-6">
+            <div class="flex justify-between">
+              <span>Total Items</span>
+              <span class="font-bold text-white">{{ cartService.itemCount() }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Shipping</span>
+              <span class="text-emerald-400 font-semibold">FREE</span>
+            </div>
+            <div class="border-t border-slate-700 pt-3 flex justify-between text-base font-bold text-white">
+              <span>Total Amount</span>
+              <span class="text-blue-400 text-xl">${{ cartService.totalAmount().toFixed(2) }}</span>
+            </div>
+          </div>
+
+          <button (click)="proceedToCheckout()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold transition shadow-lg">
+            Proceed to Checkout
+          </button>
+        </div>
+
+      </div>
+    }
+  </div>
+</div>

@@ -8,9 +8,16 @@ import { guestGuard } from '../guards/guest.guard';
 import { ProductsComponent } from './pages/products/products.component';
 import { AddProductComponent } from './pages/add-product/add-product.component';
 import { ProductPageComponent } from './pages/productpage/product-page.component';
+import { CartComponent } from './pages/cart/cart.component';
+import { CheckoutComponent } from './pages/checkout/checkout.component';
 export const routes: Routes = [
   {
     path: '',
+    component: ProductsComponent,
+    canActivate : [authGuard]
+  },
+  {
+    path: 'products',
     component: ProductsComponent,
     canActivate : [authGuard]
   },
@@ -30,7 +37,17 @@ export const routes: Routes = [
     component: ProfileComponent ,
     canActivate : [authGuard]
   },
- 
+
+  {
+    path: 'cart',
+    component : CartComponent ,
+    canActivate : [authGuard]
+  },
+  {
+    path: 'checkout',
+    component : CheckoutComponent ,
+    canActivate : [authGuard]
+  },
 
   { path: 'products/add', component: AddProductComponent, canActivate: [authGuard] },
   { path: 'products/:id', component: ProductPageComponent },

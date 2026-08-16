@@ -23,6 +23,14 @@
     <button (click)="error = null" class="text-red-400 hover:text-white ml-4 font-bold">✕</button>
   </div>
 
+  <!-- Added to Cart Toast Notification -->
+  <div *ngIf="cartSuccessMessage" class="w-full max-w-5xl mb-4 bg-emerald-950/90 border border-emerald-600 text-emerald-300 p-4 rounded-xl font-mono text-xs uppercase shadow-lg flex items-center justify-between animate-bounce">
+    <span class="flex items-center gap-2 font-bold">
+      ✓ Item successfully added to your shopping cart!
+    </span>
+    <button (click)="cartSuccessMessage = false" class="text-emerald-300 hover:text-white ml-4 font-bold">✕</button>
+  </div>
+
   <!-- Main Card Container -->
   <div *ngIf="product && !isLoading" [formGroup]="form"
     class="w-full max-w-5xl bg-white border border-[#001830]/10 rounded-2xl shadow-[0_20px_50px_rgba(0,24,48,0.15)] overflow-hidden">
@@ -81,7 +89,7 @@
                 <img [src]="img" alt="Product thumbnail" class="w-full h-full object-contain p-0.5" />
               </button>
 
-              <!-- Individual Delete Button (Visible in Edit Mode & NOT the fallback placeholder) -->
+              <!-- Individual Delete Button -->
               <button 
                 *ngIf="editing && img !== DEFAULT_NO_IMAGE"
                 type="button"
@@ -97,8 +105,8 @@
           <div class="mt-6">
             <span 
               class="px-4 py-1.5 rounded-sm border text-xs font-mono tracking-widest uppercase bg-white/5"
-              [ngClass]="(product.quantity  > 0 )? 'border-emerald-500/50 text-emerald-400' : 'border-red-500/50 text-red-400'">
-              {{ (product.quantity  > 0) ? ('In Stock: ' + product.quantity) : 'Out of Stock' }}
+              [ngClass]="(product.quantity > 0) ? 'border-emerald-500/50 text-emerald-400' : 'border-red-500/50 text-red-400'">
+              {{ (product.quantity > 0) ? ('In Stock: ' + product.quantity) : 'Out of Stock' }}
             </span>
           </div>
 
@@ -155,7 +163,6 @@
                 <input formControlName="name" type="text" maxlength="100"
                   class="w-full text-lg font-bold text-[#001830] bg-transparent border-b border-[#001830] py-1 focus:outline-none focus:border-b-2 tracking-tight" />
                 
-                <!-- Reactive Validation -->
                 <div *ngIf="form.get('name')?.invalid && form.get('name')?.touched" class="text-red-600 mt-1.5 font-mono text-[10px] uppercase tracking-wide">
                   <span *ngIf="form.get('name')?.errors?.['required']">Title is required</span>
                   <span *ngIf="form.get('name')?.errors?.['minlength']">Minimum 3 characters required</span>
@@ -245,9 +252,23 @@
         </div>
 
         <!-- ================= ACTION BAR ================= -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-12 pt-6 border-t border-[#001830]/10">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-12 pt-6 border-t border-[#001830]/10">
           
-          <!-- View Mode (Only rendered for Product Owner) -->
+          <!-- View Mode (Buyer / Non-Owner Actions) -->
+          <ng-container *ngIf="!isOwner && !editing">
+            <button 
+              type="button"
+              (click)="addToCart()"
+              [disabled]="product.quantity <= 0 || isAddingToCart"
+              class="sm:col-span-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-widest py-4 px-6 rounded-lg transition shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>{{ isAddingToCart ? 'Adding to Cart...' : (product.quantity > 0 ? 'Add to Shopping Cart' : 'Item Sold Out') }}</span>
+            </button>
+          </ng-container>
+
+          <!-- View Mode (Product Owner Actions) -->
           <ng-container *ngIf="isOwner && !editing">
             <button 
               type="button"
@@ -302,14 +323,12 @@
     <div (click)="$event.stopPropagation()"
          class="bg-[#001830] border border-red-500/30 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
       
-      <!-- Top Warning Icon -->
       <div class="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4 text-red-400 mx-auto">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       </div>
 
-      <!-- Text Content -->
       <div class="text-center mb-6">
         <h3 class="text-lg font-bold text-white uppercase tracking-wider">Confirm Deletion</h3>
         <p class="text-xs font-mono text-gray-300 mt-2 leading-relaxed break-words">
@@ -317,7 +336,6 @@
         </p>
       </div>
 
-      <!-- Action Buttons -->
       <div class="grid grid-cols-2 gap-3 pt-4 border-t border-white/10">
         <button 
           type="button"
@@ -346,9 +364,7 @@
     (click)="closeFullImageView()"
     class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-8">
     
-    <!-- Action Controls (Top Right) -->
     <div class="absolute top-6 right-6 flex items-center gap-3 z-10">
-      <!-- Download Button -->
       <button 
         type="button"
         (click)="downloadCurrentImage(); $event.stopPropagation()" 
@@ -359,7 +375,6 @@
         </svg>
       </button>
 
-      <!-- Close Button -->
       <button 
         type="button"
         (click)="closeFullImageView()" 

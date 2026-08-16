@@ -5,15 +5,15 @@ spring:
   application:
     name: cart-service
 
-  # Redis Configuration (Stores active cart sessions)
+  # Redis Configuration
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT}
 
-  # Kafka Configuration (For asynchronous events)
+  # Kafka Configuration
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
     consumer:
       group-id: cart-group
       auto-offset-reset: earliest
