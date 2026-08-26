@@ -15,7 +15,8 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@RedisHash(value = "shopping_cart", timeToLive = 604800) // 7 days TTL
+// @RedisHash(value = "shopping_cart", timeToLive = 604800) // 7 days TTL
+@RedisHash(value = "shopping_cart")
 public class ShoppingCart {
 
     @Id

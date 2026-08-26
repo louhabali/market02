@@ -11,6 +11,9 @@ spring:
       host: ${SPRING_DATA_REDIS_HOST}
       port: ${SPRING_DATA_REDIS_PORT}
 
+    # mongodb:
+    #   uri: ${SPRING_DATA_MONGODB_URI:mongodb://mongodb:27017/cart_db}
+
   # Kafka Configuration
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}

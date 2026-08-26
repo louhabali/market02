@@ -13,7 +13,7 @@ import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.mongodb.lang.NonNull;;
+import com.mongodb.lang.NonNull;
 @RestController
 @RequestMapping("api/auth")
 @RequiredArgsConstructor
