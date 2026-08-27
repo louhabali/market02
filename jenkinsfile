@@ -12,7 +12,7 @@ pipeline {
         COMPOSE         = 'docker compose -p 01e_com'
         DEPLOY_DIR      = '/opt/01e_com'
         EMAIL           = 'louhabali@gmail.com'
-        EMAIL2          = 'ismailichi29@gmail.com'
+        //EMAIL2          = 'ismailichi29@gmail.com'
         SONAR_HOST_URL  = 'http://sonarqube:9000'
     }
 
@@ -137,9 +137,9 @@ pipeline {
             when {
                 allOf {
                     anyOf {
-                        branch 'main'
-                        environment name: 'CHANGE_TARGET', value: 'main'
-                        expression { env.GIT_BRANCH?.endsWith('main') }
+                        branch 'alouhab'
+                        environment name: 'CHANGE_TARGET', value: 'alouhab'
+                        expression { env.GIT_BRANCH?.endsWith('alouhab') }
                     }
 
                     // Never deploy from a scheduled SonarQube scan.
@@ -176,19 +176,19 @@ pipeline {
 
                 if (isTimerTrigger) {
                     emailext (
-                        to: "${env.EMAIL}, ${env.EMAIL2}",
+                        to: "${env.EMAIL}",
                         subject: "🔎 SONARQUBE SCAN PASSED: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                         body: "Scheduled SonarQube health scan completed successfully and the quality gate passed.\n\nLogs: ${env.BUILD_URL}"
                     )
                 } else if (env.BRANCH_NAME == 'main' || env.GIT_BRANCH == 'origin/main') {
                     emailext (
-                        to: "${env.EMAIL}, ${env.EMAIL2}",
+                        to: "${env.EMAIL}",
                         subject: "✅ SUCCESS & DEPLOYED: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                         body: "Pipeline passed, quality gates cleared, and changes successfully deployed to ${env.DEPLOY_DIR}.\n\nLogs: ${env.BUILD_URL}"
                     )
                 } else {
                     emailext (
-                        to: "${env.EMAIL}, ${env.EMAIL2}",
+                        to: "${env.EMAIL}",
                         subject: "✅ CI PASSED: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                         body: "Tests and SonarQube quality gate passed successfully.\n\nLogs: ${env.BUILD_URL}"
                     )
@@ -197,7 +197,7 @@ pipeline {
         }
         failure {
             emailext (
-                to: "${env.EMAIL}, ${env.EMAIL2}",
+                to: "${env.EMAIL}",
                 subject: "🚨 FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                 body: "Pipeline execution failed. Production environment was not modified.\n\nLogs: ${env.BUILD_URL}"
             )
