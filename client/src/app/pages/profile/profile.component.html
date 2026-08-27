@@ -41,6 +41,12 @@
                     <span class="mt-2 px-4 py-1 rounded-sm border border-white/30 text-white/90 text-xs font-mono tracking-widest uppercase bg-white/5">
                         {{ user.role }}
                     </span>
+
+                    <!-- Quick Link to Seller Analytics Dashboard -->
+                    <a *ngIf="user.role === 'SELLER' && !editing" routerLink="/seller/dashboard"
+                       class="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold uppercase tracking-widest py-2 px-3 rounded-lg transition shadow-md">
+                        📊 Seller Analytics →
+                    </a>
                 </div>
 
                 <!-- Context Hint bottom pinned -->
@@ -136,7 +142,7 @@
                                 {{ user.role }}
                             </div>
 
-                            <!-- ✅ Edit Mode Dropdown -->
+                            <!-- Edit Mode Dropdown -->
                             <div *ngIf="editing">
                                 <select formControlName="role" 
                                     class="w-full text-base font-semibold text-[#001830] bg-transparent border-b border-[#001830] py-1 focus:outline-none focus:border-b-2 tracking-tight cursor-pointer">
@@ -161,6 +167,34 @@
                         </div>
 
                     </div>
+
+                    <!-- ================= CLIENT SHOPPING INSIGHTS (AUDIT REQUIRED) ================= -->
+                    <div *ngIf="user.role === 'CLIENT' && !editing" class="mt-8 pt-6 border-t border-[#001830]/10">
+                        <h3 class="text-xs font-bold text-[#001830] tracking-widest uppercase mb-4">
+                            Shopping Insights
+                        </h3>
+
+                        <div class="grid grid-cols-3 gap-3">
+                            <!-- Total Spent Badge -->
+                            <div class="bg-[#001830]/5 border border-[#001830]/10 p-4 rounded-xl">
+                                <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Spent</span>
+                                <span class="text-lg font-black text-[#001830]">$450.00</span>
+                            </div>
+
+                            <!-- Top Category Badge -->
+                            <div class="bg-[#001830]/5 border border-[#001830]/10 p-4 rounded-xl">
+                                <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Top Category</span>
+                                <span class="text-sm font-bold text-[#001830]">Outerwear</span>
+                            </div>
+
+                            <!-- Orders Placed Badge -->
+                            <div class="bg-[#001830]/5 border border-[#001830]/10 p-4 rounded-xl">
+                                <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Orders Placed</span>
+                                <span class="text-lg font-black text-[#001830]">8</span>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- ================= ACTION BAR ================= -->

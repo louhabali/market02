@@ -10,6 +10,8 @@ import { AddProductComponent } from './pages/add-product/add-product.component';
 import { ProductPageComponent } from './pages/productpage/product-page.component';
 import { CartComponent } from './pages/cart/cart.component';
 import { CheckoutComponent } from './pages/checkout/checkout.component';
+import { SellerDashboardComponent } from './pages/seller-dashboard/seller-dashboard.component';
+import { roleGuard } from '../guards/role.guard';
 export const routes: Routes = [
   {
     path: '',
@@ -36,6 +38,12 @@ export const routes: Routes = [
     path: 'profile',
     component: ProfileComponent ,
     canActivate : [authGuard]
+  },
+  { 
+    path: 'seller/dashboard', 
+    component: SellerDashboardComponent,
+    canActivate: [roleGuard],
+    data: { expectedRole: 'SELLER' }
   },
 
   {
