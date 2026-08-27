@@ -30,15 +30,20 @@ export class RegisterComponent implements OnInit {
   loading = false;
   error = '';
 
+  // Regex patterns aligned with backend specifications
+  private usernameRegex = /^[a-zA-Z0-9]{3,20}$/;
+  private emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  private passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{4,}$/;
+
   form = this.fb.group({
-    username: ['', [Validators.required, Validators.minLength(3)]],
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    username: ['', [Validators.required, Validators.pattern(this.usernameRegex)]],
+    email: ['', [Validators.required, Validators.pattern(this.emailRegex)]],
+    password: ['', [Validators.required, Validators.pattern(this.passwordRegex)]],
     role: ['SELLER' as UserRole, [Validators.required, Validators.pattern(/^(SELLER|CLIENT)$/)]]
   });
 
   ngOnInit(): void {
-    // Automatically sweeps away the global error banner whenever the user updates any input
+    // Clear global error message when form inputs change
     this.form.valueChanges.subscribe(() => {
       if (this.error) {
         this.error = '';
@@ -48,7 +53,6 @@ export class RegisterComponent implements OnInit {
 
   onAvatarSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-
     if (!input.files?.length) return;
 
     const file = input.files[0];
@@ -71,7 +75,6 @@ export class RegisterComponent implements OnInit {
     this.error = '';
 
     if (this.selectedAvatar) {
-      // Call dedicated public avatar endpoint
       this.mediaService.uploadPublicAvatar(this.selectedAvatar).subscribe({
         next: (res) => {
           this.registerUser(res.avatarUrl);
@@ -79,7 +82,7 @@ export class RegisterComponent implements OnInit {
         error: (er) => {
           console.error('Avatar upload failed:', er);
           this.loading = false;
-          this.error = er?.error?.error ?? 'Failed to upload avatar.';
+          this.error = er?.error?.error ?? er?.error?.message ?? 'Failed to upload avatar.';
         }
       });
     } else {
@@ -88,14 +91,15 @@ export class RegisterComponent implements OnInit {
   }
 
   private registerUser(avatarUrl: string): void {
-    const formValues = this.form.getRawValue();
+    const rawValues = this.form.getRawValue();
 
+    // Sanitize and trim values prior to sending request
     const data: RegisterRequest = {
-      username: formValues.username,
-      email: formValues.email,
-      password: formValues.password,
-      role: formValues.role,
-      avatarUrl
+      username: rawValues.username.trim(),
+      email: rawValues.email.trim().toLowerCase(),
+      password: rawValues.password.trim(),
+      role: rawValues.role.trim() as UserRole,
+      avatarUrl: avatarUrl ? avatarUrl.trim() : ''
     };
 
     this.authService.register(data).subscribe({
@@ -106,7 +110,7 @@ export class RegisterComponent implements OnInit {
       error: (err) => {
         console.error('Backend registration error:', err);
         this.loading = false;
-        this.error = err?.error?.errorMessage ?? 'Registration failed. Please try again later.';
+        this.error = err?.error?.errorMessage ?? err?.error?.message ?? 'Registration failed. Please try again later.';
       }
     });
   }
