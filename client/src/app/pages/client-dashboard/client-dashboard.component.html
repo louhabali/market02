@@ -1,0 +1,109 @@
+<div class="min-h-screen bg-[#0a1120] p-6 sm:p-10 antialiased font-sans">
+  <div class="max-w-6xl mx-auto space-y-8">
+    
+    <!-- Top Header -->
+    <div class="flex justify-between items-center border-b border-white/10 pb-6">
+      <div>
+        <h1 class="text-3xl font-black text-white tracking-tight uppercase">Client Dashboard</h1>
+        <p class="text-xs text-white/50 tracking-wider font-mono mt-1">Shopping Telemetry & Order History</p>
+      </div>
+      <a routerLink="/profile" class="border border-white/20 hover:border-white text-white/80 hover:text-white text-xs font-mono font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition">
+        ← Back to Profile
+      </a>
+    </div>
+
+    <!-- Analytics Section -->
+    <div class="grid sm:grid-cols-3 gap-6">
+      <div class="bg-[#001830] border border-white/10 rounded-2xl p-6 shadow-xl">
+        <span class="text-[11px] font-mono uppercase tracking-widest text-white/50 block mb-2">Total Spent</span>
+        <div class="text-3xl font-black text-emerald-400 tracking-tight">${{ analytics.totalSpent | number:'1.2-2' }}</div>
+      </div>
+      <div class="bg-[#001830] border border-white/10 rounded-2xl p-6 shadow-xl">
+        <span class="text-[11px] font-mono uppercase tracking-widest text-white/50 block mb-2">Orders Placed</span>
+        <div class="text-3xl font-black text-white tracking-tight">{{ analytics.totalOrders }}</div>
+      </div>
+      <div class="bg-[#001830] border border-white/10 rounded-2xl p-6 shadow-xl">
+        <span class="text-[11px] font-mono uppercase tracking-widest text-white/50 block mb-2">Top Category</span>
+        <div class="text-2xl font-black text-blue-400 tracking-tight">{{ analytics.topCategory }}</div>
+      </div>
+    </div>
+
+    <!-- Most Bought Products -->
+    <div class="bg-white rounded-2xl border border-[#001830]/10 p-6 shadow-xl">
+      <h2 class="text-lg font-black text-[#001830] uppercase tracking-wider mb-4 pb-2 border-b border-gray-200">Most Bought Items</h2>
+      <div class="grid sm:grid-cols-3 gap-4">
+        <div *ngFor="let item of analytics.mostBoughtProducts" class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+          <p class="font-bold text-[#001830] text-sm">{{ item.name }}</p>
+          <p class="text-xs text-gray-500 mt-1">Purchased: {{ item.quantity }} units</p>
+          <p class="text-xs font-bold text-emerald-600 mt-0.5">Spent: ${{ item.amount | number:'1.2-2' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders Management & History -->
+    <div class="bg-white rounded-2xl border border-[#001830]/10 p-6 shadow-xl space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-200">
+        <h2 class="text-lg font-black text-[#001830] uppercase tracking-wider">Order Tracking & Management</h2>
+        
+        <!-- Search & Filter Controls -->
+        <div class="flex items-center gap-3">
+          <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="filterOrders()" placeholder="Search order ID or item..."
+            class="bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-xs font-semibold text-[#001830] focus:outline-none focus:border-blue-500">
+          <select [(ngModel)]="statusFilter" (ngModelChange)="filterOrders()"
+            class="bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-xs font-semibold text-[#001830]">
+            <option value="ALL">All Statuses</option>
+            <option value="PENDING">PENDING</option>
+            <option value="SHIPPED">SHIPPED</option>
+            <option value="DELIVERED">DELIVERED</option>
+            <option value="CANCELLED">CANCELLED</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Orders List -->
+      <div *ngIf="loading" class="text-center py-8 font-mono text-sm text-gray-500">Loading Order Records...</div>
+      
+      <div *ngIf="!loading && filteredOrders.length === 0" class="text-center py-8 text-gray-400">
+        No orders match your criteria.
+      </div>
+
+      <div *ngFor="let order of filteredOrders" class="border border-gray-200 rounded-xl p-5 space-y-4 hover:border-gray-300 transition">
+        <div class="flex justify-between items-center text-xs font-mono">
+          <span class="font-bold text-[#001830]">ORDER #{{ order.id }}</span>
+          <span class="px-3 py-1 rounded-full font-bold uppercase"
+            [ngClass]="{
+              'bg-amber-100 text-amber-800': order.status === 'PENDING',
+              'bg-blue-100 text-blue-800': order.status === 'SHIPPED',
+              'bg-emerald-100 text-emerald-800': order.status === 'DELIVERED',
+              'bg-red-100 text-red-800': order.status === 'CANCELLED'
+            }">
+            {{ order.status }}
+          </span>
+        </div>
+
+        <div class="divide-y divide-gray-100">
+          <div *ngFor="let item of order.items" class="py-2 flex justify-between text-sm">
+            <span class="text-gray-700 font-medium">{{ item.productName }} <span class="text-xs text-gray-400">(×{{ item.quantity }})</span></span>
+            <span class="font-mono text-gray-900">${{ (item.price * item.quantity) | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center pt-3 border-t border-gray-100 text-xs">
+          <span class="font-bold text-[#001830] text-sm">Total: ${{ order.totalAmount | number:'1.2-2' }}</span>
+          
+          <div class="flex items-center gap-2">
+            <button *ngIf="order.status === 'PENDING'" (click)="cancelOrder(order.id)"
+              class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3 py-1.5 rounded-md border border-rose-200 transition">
+              Cancel Order
+            </button>
+            <button (click)="redoOrder(order)"
+              class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-3 py-1.5 rounded-md border border-blue-200 transition">
+              Redo Order ↺
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

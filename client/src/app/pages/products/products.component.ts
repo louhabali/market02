@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ProductService } from '../../services/product.service';
@@ -11,15 +12,21 @@ import { ProductCardComponent } from '../../../shared/product-card/product-card.
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, RouterLink, ProductCardComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ProductCardComponent],
   templateUrl: './products.component.html'
 })
 export class ProductsComponent implements OnInit, OnDestroy {
   products: Product[] = [];
+  filteredProducts: Product[] = [];
   isLoading = true;
   error: string | null = null;
   currentUser: ProfileResponse | null = null;
   private userSub!: Subscription;
+
+  // Search & Filter State
+  searchKeyword = '';
+  selectedCategory = 'ALL';
+  maxPrice: number = 1000;
 
   constructor(
     private productService: ProductService,
@@ -29,7 +36,6 @@ export class ProductsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // In-memory subscription
     this.userSub = this.userService.user$.subscribe((user) => {
       this.currentUser = user;
       this.cdr.detectChanges();
@@ -39,7 +45,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
   }
 
   get canAddProduct(): boolean {
-    const role = this.currentUser?.role || this.authService.getRole() ;
+    const role = this.currentUser?.role || this.authService.getRole();
     return role === 'SELLER';
   }
 
@@ -47,22 +53,20 @@ export class ProductsComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.productService.getAllProducts().subscribe({
       next: (data: any[]) => {
-     
-        console.log(data)
         if (Array.isArray(data)) {
           this.products = data.map(p => ({
             ...p,
             id: p.id || p._id || (p._id && p._id.$oid ? p._id.$oid : '')
-            
           }));
+          this.applyFilters();
         } else {
           this.products = [];
+          this.filteredProducts = [];
         }
         this.isLoading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Failed to load products', err);
         this.error = 'Could not fetch products from backend.';
         this.isLoading = false;
         this.cdr.detectChanges();
@@ -70,30 +74,32 @@ export class ProductsComponent implements OnInit, OnDestroy {
     });
   }
 
-  ngOnDestroy(): void {
-    if (this.userSub) {
-      this.userSub.unsubscribe();
-    }
-  }
-  onDeleteProduct(productId: string): void {
-  if (!productId) {
-    console.error('Cannot delete: Product ID is empty');
-    return;
+  applyFilters(): void {
+    const kw = this.searchKeyword.toLowerCase().trim();
+    this.filteredProducts = this.products.filter(p => {
+      const matchesKw = !kw || p.name.toLowerCase().includes(kw) || p.description?.toLowerCase().includes(kw);
+      const matchesCategory = this.selectedCategory === 'ALL' || p.category === this.selectedCategory;
+      const matchesPrice = !p.price || p.price <= this.maxPrice;
+      return matchesKw && matchesCategory && matchesPrice;
+    });
   }
 
-  this.productService.deleteProduct(productId).subscribe({
-    next: () => {
-      // Instantly remove the deleted product from local array to update UI
-      this.products = this.products.filter(
-        (p) => p.id !== productId && (p as any)._id !== productId
-      );
-      this.cdr.detectChanges();
-    },
-    error: (err) => {
-      console.error('Failed to delete product', err);
-      this.error = err?.error?.errorMessage || err?.error?.message || 'Could not delete product from backend.';
-      this.cdr.detectChanges();
-    }
-  });
-}
+  ngOnDestroy(): void {
+    if (this.userSub) this.userSub.unsubscribe();
+  }
+
+  onDeleteProduct(productId: string): void {
+    if (!productId) return;
+    this.productService.deleteProduct(productId).subscribe({
+      next: () => {
+        this.products = this.products.filter(p => p.id !== productId);
+        this.applyFilters();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Could not delete product.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
 }
