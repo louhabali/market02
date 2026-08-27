@@ -1,9 +1,18 @@
 # Stage 1: Build the JAR using Maven
 FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
+
+# Copy POM first to resolve and cache dependencies
 COPY pom.xml .
+
+# Pre-download dependencies into a shared local BuildKit cache
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn dependency:go-offline -B
+
+# Copy source code and build using the shared cache
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn clean package -DskipTests -Dmaven.test.skip=true
 
 # Stage 2: Run the JAR
 FROM eclipse-temurin:21-jre-alpine

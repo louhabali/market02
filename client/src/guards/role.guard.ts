@@ -1,24 +1,29 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { AuthService } from '../app/services/auth.service';
 
 export const roleGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  const expectedRole = route.data['expectedRole'] as string;
-
   const isLoggedIn = authService.isLoggedIn();
-  const userRole = authService.getRole();
+  const rawRole = authService.getRole() || '';
+  
+  // Normalize role string (handles 'ROLE_SELLER' vs 'SELLER')
+  const userRole = rawRole.replace('ROLE_', '').toUpperCase();
+
+  // Matches 'expectedRole' specified in app.routes.ts
+  const expectedRole = (route.data?.['expectedRole'] || route.data?.['role'] || '').toUpperCase();
 
   if (isLoggedIn && userRole === expectedRole) {
     return true;
   }
 
-  if (!isLoggedIn) {
-    return router.createUrlTree(['/login']);
+  if (isLoggedIn) {
+    router.navigate(['/forbidden']);
+    return false;
   }
 
-  // User is logged in but lacks required role privileges -> redirect to Profile
-  return router.createUrlTree(['/profile']);
+  router.navigate(['/login']);
+  return false;
 };

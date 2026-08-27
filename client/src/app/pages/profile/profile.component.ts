@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService, ProfileResponse } from '../../services/auth.service';
 import { MediaService } from '../../services/media.service';
@@ -10,7 +10,7 @@ import { UserService } from '../../services/user.service';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './profile.component.html'
 })
 export class ProfileComponent implements OnInit, OnDestroy {
@@ -40,7 +40,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.userSub = this.us.user$.subscribe((data) => {
       if (data) {
         this.user = data;
-        
+
         if (!this.editing) {
           this.form.patchValue({
             username: data.name || (data as any).username || '',
@@ -59,7 +59,16 @@ export class ProfileComponent implements OnInit, OnDestroy {
   loadProfile(): void {
     this.loading = true;
     this.authService.getProfile().subscribe({
-      next: () => {
+      next: (data: ProfileResponse) => {
+        const normalizedUser: ProfileResponse = {
+          ...data,
+          name: data.name || (data as any).username || '',
+          avatarUrl: data.avatarUrl || (data as any).avatar || '',
+          role: data.role ? data.role.replace('ROLE_', '') : 'CLIENT'
+        };
+
+        // Broadcast profile state so Navbar and RoleGuard stay synchronized
+        this.us.setUser(normalizedUser);
         this.loading = false;
       },
       error: (err) => {
@@ -82,15 +91,15 @@ export class ProfileComponent implements OnInit, OnDestroy {
     reader.readAsDataURL(this.selectedAvatar);
   }
 
-  editProfile(): void { 
-    this.editing = true; 
+  editProfile(): void {
+    this.editing = true;
   }
 
   cancelEdit(): void {
     this.editing = false;
     this.selectedAvatar = null;
     this.error = '';
-    
+
     if (this.user) {
       this.form.patchValue({
         username: this.user.name || (this.user as any).username || '',
@@ -103,24 +112,23 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   saveProfile(): void {
-  if (this.form.invalid) return;
-  this.loading = true;
-  this.error = '';
+    if (this.form.invalid) return;
+    this.loading = true;
+    this.error = '';
 
-  if (this.selectedAvatar) {
-    this.mediaService.uploadImages([this.selectedAvatar]).subscribe({
-      next: (urls) => this.updateBackend(urls[0]),
-      error: () => {
-        this.loading = false;
-        this.error = 'Failed to upload avatar.';
-      }
-    });
-  } else {
-    // Pass the existing user's avatar path intact
-    const currentAvatar = this.user?.avatarUrl || '';
-    this.updateBackend(currentAvatar);
+    if (this.selectedAvatar) {
+      this.mediaService.uploadImages([this.selectedAvatar]).subscribe({
+        next: (urls) => this.updateBackend(urls[0]),
+        error: () => {
+          this.loading = false;
+          this.error = 'Failed to upload avatar.';
+        }
+      });
+    } else {
+      const currentAvatar = this.user?.avatarUrl || '';
+      this.updateBackend(currentAvatar);
+    }
   }
-}
 
   private updateBackend(avatarUrl: string): void {
     const values = this.form.getRawValue();
@@ -128,18 +136,17 @@ export class ProfileComponent implements OnInit, OnDestroy {
       username: values.username,
       email: values.email,
       avatarUrl: avatarUrl,
-      role: values.role 
+      role: values.role
     }).subscribe({
       next: (updatedUser: ProfileResponse) => {
         const normalizedUser: ProfileResponse = {
           ...updatedUser,
           name: updatedUser.name || (updatedUser as any).username || values.username,
-          avatarUrl: updatedUser.avatarUrl || (updatedUser as any).avatar || avatarUrl
+          avatarUrl: updatedUser.avatarUrl || (updatedUser as any).avatar || avatarUrl,
+          role: updatedUser.role ? updatedUser.role.replace('ROLE_', '') : values.role
         };
 
-        // Broadcast updated state to all subscribers (Navbar, Profile, etc.)
         this.us.setUser(normalizedUser);
-
         this.editing = false;
         this.loading = false;
         this.selectedAvatar = null;

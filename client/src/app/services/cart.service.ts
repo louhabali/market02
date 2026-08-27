@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ShoppingCart, AddToCartRequest } from '../models/cart.model';
-import { tap } from 'rxjs';
+import { tap, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -28,19 +28,25 @@ export class CartService {
     ).subscribe();
   }
 
-  addToCart(item: AddToCartRequest) {
+  addToCart(item: AddToCartRequest): Observable<ShoppingCart> {
     return this.http.post<ShoppingCart>(`${this.apiUrl}/items`, item).pipe(
       tap(updatedCart => this.cartSignal.set(updatedCart))
     );
   }
 
-  removeFromCart(productId: string) {
+  updateQuantity(productId: string, quantity: number): Observable<ShoppingCart> {
+    return this.http.put<ShoppingCart>(`${this.apiUrl}/items`, { productId, quantity }).pipe(
+      tap(updatedCart => this.cartSignal.set(updatedCart))
+    );
+  }
+
+  removeFromCart(productId: string): Observable<ShoppingCart> {
     return this.http.delete<ShoppingCart>(`${this.apiUrl}/items/${productId}`).pipe(
       tap(updatedCart => this.cartSignal.set(updatedCart))
     );
   }
 
-  clearCart() {
+  clearCart(): Observable<void> {
     return this.http.delete<void>(this.apiUrl).pipe(
       tap(() => this.cartSignal.set({ userId: '', items: [], totalAmount: 0 }))
     );
