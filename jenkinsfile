@@ -4,6 +4,7 @@ pipeline {
     options {
         ansiColor('xterm')
         timestamps()
+        disableConcurrentBuilds()
     }
 
     environment {
@@ -11,11 +12,16 @@ pipeline {
         COMPOSE         = 'docker compose -p 01e_com'
         DEPLOY_DIR      = '/opt/01e_com'
         EMAIL           = 'louhabali@gmail.com'
+        EMAIL2          = 'ismailichi29@gmail.com'
         SONAR_HOST_URL  = 'http://sonarqube:9000'
     }
 
     triggers {
         githubPush()
+
+        // Weekly SonarQube health scan.
+        // Jenkins hashes the job name to avoid all jobs running simultaneously.
+        cron('H H * * 0')
     }
 
     stages {
@@ -40,7 +46,7 @@ pipeline {
                     }
                     steps {
                         dir('client') {
-                            sh 'npm ci --no-audit --no-fund && npm run test:ci'
+                            sh 'npm ci --legacy-peer-deps --no-audit --no-fund && npm run test:ci'
                         }
                     }
                 }
@@ -49,14 +55,14 @@ pipeline {
                     steps {
                         sh '''
                             for dir in gateway_service user_service product_service media_service; do
-                                (cd "$dir" && chmod +x mvnw && ./mvnw clean test)
+                                (cd "$dir" && chmod +x mvnw && ./mvnw clean test jacoco:report)
                             done
                         '''
                     }
                     post {
                         always {
                             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
-                            jacoco execPattern: '**/target/*.exec'
+                            jacoco execPattern: '**/target/*.exec', classPattern: '**/target/classes'
                         }
                     }
                 }
@@ -74,12 +80,19 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     withSonarQubeEnv('SonarQube') {
-                        sh """
+                        sh '''
                             sonar-scanner \
-                              -Dsonar.host.url=${env.SONAR_HOST_URL} \
-                              -Dsonar.login=${SONAR_TOKEN} \
-                              -Dsonar.token=${SONAR_TOKEN}
-                            """
+                              -Dsonar.host.url=${SONAR_HOST_URL} \
+                              -Dsonar.token=${SONAR_TOKEN} \
+                              -Dsonar.projectKey=${APP_NAME} \
+                              -Dsonar.sources=gateway_service/src/main/java,user_service/src/main/java,product_service/src/main/java,media_service/src/main/java,client/src \
+                              -Dsonar.tests=gateway_service/src/test/java,user_service/src/test/java,product_service/src/test/java,media_service/src/test/java \
+                              -Dsonar.java.binaries=gateway_service/target/classes,user_service/target/classes,product_service/target/classes,media_service/target/classes \
+                              -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
+                              -Dsonar.javascript.lcov.reportPaths=client/coverage/lcov.info \
+                              -Dsonar.coverage.exclusions=**/*Application.java,**/config/**,**/dto/**,**/entity/**,**/entities/**,**/event/**,**/model/**,client/src/main.ts,client/src/environments/** \
+                              -Dsonar.exclusions=**/node_modules/**,**/target/**,**/*.spec.ts,**/config/**,**/event/**,**/model/**,**/dto/**,**/entity/**
+                        '''
                     }
                 }
             }
@@ -113,10 +126,29 @@ pipeline {
             }
         }
 
+        stage('Debug Env') {
+            steps {
+                sh 'echo "BRANCH_NAME: ${BRANCH_NAME}"'
+                sh 'echo "GIT_BRANCH: ${GIT_BRANCH}"'
+            }
+        }
+
         stage('Deploy Application') {
             when {
-                branch 'main'
+                allOf {
+                    anyOf {
+                        branch 'main'
+                        environment name: 'CHANGE_TARGET', value: 'main'
+                        expression { env.GIT_BRANCH?.endsWith('main') }
+                    }
+
+                    // Never deploy from a scheduled SonarQube scan.
+                    not {
+                        triggeredBy 'TimerTrigger'
+                    }
+                }
             }
+
             steps {
                 echo "Deploying service stack to ${DEPLOY_DIR}..."
                 sh '''
@@ -138,24 +170,34 @@ pipeline {
         }
         success {
             script {
-                if (env.BRANCH_NAME == 'main' || env.GIT_BRANCH == 'origin/main') {
+                def isTimerTrigger = currentBuild.buildCauses.any { cause ->
+                    cause._class.contains('TimerTrigger')
+                }
+
+                if (isTimerTrigger) {
                     emailext (
-                        to: "${env.EMAIL}",
+                        to: "${env.EMAIL}, ${env.EMAIL2}",
+                        subject: "🔎 SONARQUBE SCAN PASSED: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
+                        body: "Scheduled SonarQube health scan completed successfully and the quality gate passed.\n\nLogs: ${env.BUILD_URL}"
+                    )
+                } else if (env.BRANCH_NAME == 'main' || env.GIT_BRANCH == 'origin/main') {
+                    emailext (
+                        to: "${env.EMAIL}, ${env.EMAIL2}",
                         subject: "✅ SUCCESS & DEPLOYED: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                         body: "Pipeline passed, quality gates cleared, and changes successfully deployed to ${env.DEPLOY_DIR}.\n\nLogs: ${env.BUILD_URL}"
                     )
                 } else {
                     emailext (
-                        to: "${env.EMAIL}",
-                        subject: "✅ PR TESTS PASSED: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
-                        body: "Pull request branch tests and SonarQube quality gate passed successfully! Safe to merge into main.\n\nLogs: ${env.BUILD_URL}"
+                        to: "${env.EMAIL}, ${env.EMAIL2}",
+                        subject: "✅ CI PASSED: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
+                        body: "Tests and SonarQube quality gate passed successfully.\n\nLogs: ${env.BUILD_URL}"
                     )
                 }
             }
         }
         failure {
             emailext (
-                to: "${env.EMAIL}",
+                to: "${env.EMAIL}, ${env.EMAIL2}",
                 subject: "🚨 FAILURE: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
                 body: "Pipeline execution failed. Production environment was not modified.\n\nLogs: ${env.BUILD_URL}"
             )
