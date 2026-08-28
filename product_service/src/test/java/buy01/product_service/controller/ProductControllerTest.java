@@ -68,7 +68,7 @@ class ProductControllerTest {
                 .imageUrls(List.of("img1.jpg"))
                 .build();
 
-        when(productService.createProduct(any(), any(), any(), any(), any(), any(), any()))
+        when(productService.createProduct(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(createdProduct);
 
         mockMvc.perform(multipart("/api/products")
@@ -79,7 +79,8 @@ class ProductControllerTest {
                 .param("name", "Gaming Laptop")
                 .param("description", "RTX 4090 Gaming Laptop")
                 .param("price", "1999.99")
-                .param("quantity", "5"))
+                .param("quantity", "5")
+                .param("category", "Streetwear"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Gaming Laptop"));
     }

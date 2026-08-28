@@ -171,6 +171,30 @@
               </div>
             </div>
 
+            <!-- Category Field -->
+            <div class="bg-white p-5 transition-colors hover:bg-gray-50/50 overflow-hidden">
+              <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-400 mb-1">
+                Category
+              </label>
+
+              <div *ngIf="!editing" class="text-base font-bold tracking-wide uppercase text-[#001830] break-all">
+                {{ product.category?.trim() || 'Uncategorized' }}
+              </div>
+
+              <div *ngIf="editing">
+                <select formControlName="category"
+                  class="w-full text-base font-semibold text-[#001830] bg-transparent border-b border-[#001830] py-1 focus:outline-none focus:border-b-2 tracking-tight">
+                  <option value="" disabled>Select a category</option>
+                  <option *ngFor="let categoryOption of categories" [value]="categoryOption">
+                    {{ categoryOption }}
+                  </option>
+                </select>
+                <div *ngIf="form.get('category')?.invalid && form.get('category')?.touched" class="text-red-600 mt-1.5 font-mono text-[10px] uppercase tracking-wide">
+                  Category is required
+                </div>
+              </div>
+            </div>
+
             <!-- Price Field -->
             <div class="bg-white p-5 transition-colors hover:bg-gray-50/50 overflow-hidden">
               <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-400 mb-1">

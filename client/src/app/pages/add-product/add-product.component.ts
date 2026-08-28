@@ -18,8 +18,11 @@ export class AddProductComponent {
 
   name = '';
   description = '';
+  category = '';
   price: number | null = null;
   quantity: number | null = null;
+
+  readonly categories = ['Streetwear', 'Outerwear', 'Accessories'];
 
   selectedFiles: File[] = [];
   previews: string[] = [];
@@ -140,6 +143,10 @@ export class AddProductComponent {
       errors.push('Stock quantity exceeds maximum limit (999,999).');
     }
 
+    if (!this.category) {
+      errors.push('Category is required.');
+    }
+
     // Frontend validation check for max files before sending request
     if (this.selectedFiles.length > this.MAX_IMAGES) {
       errors.push(`Maximum ${this.MAX_IMAGES} images allowed per product.`);
@@ -156,6 +163,7 @@ export class AddProductComponent {
     formData.append('description', trimmedDesc);
     formData.append('price', this.price!.toString());
     formData.append('quantity', this.quantity!.toString());
+    formData.append('category', this.category);
 
     this.selectedFiles.forEach((file) => {
       formData.append('images', file);

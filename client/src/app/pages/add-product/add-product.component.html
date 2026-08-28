@@ -96,6 +96,23 @@
           </div>
         </div>
 
+        <!-- Category Field -->
+        <div>
+          <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-400 mb-2">
+            Category
+          </label>
+          <select
+            [(ngModel)]="category"
+            (ngModelChange)="onInputChange()"
+            required
+            class="w-full text-base font-semibold text-[#001830] bg-gray-50 border border-gray-200 rounded-lg p-3.5 focus:outline-none focus:border-[#001830] transition">
+            <option value="" disabled>Select a category</option>
+            <option *ngFor="let categoryOption of categories" [value]="categoryOption">
+              {{ categoryOption }}
+            </option>
+          </select>
+        </div>
+
         <!-- Image Upload Box -->
         <div>
           <label class="block text-[11px] font-bold tracking-widest uppercase text-gray-400 mb-2">

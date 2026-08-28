@@ -107,6 +107,7 @@ class ProductServiceTest {
                                 "RTX 4090 Gaming Laptop",
                                 1999.99,
                                 5,
+                                "Streetwear",
                                 // new MultipartFile[] { image },
                                 new MultipartFile[] { image },
                                 "seller-1",
@@ -128,6 +129,7 @@ class ProductServiceTest {
                                 "Updated RTX 4090 Gaming Laptop",
                                 1599.99,
                                 3,
+                                "Outerwear",
                                 List.of("existing.jpg"),
                                 null,
                                 "seller-1",
@@ -154,6 +156,7 @@ class ProductServiceTest {
                                 "Updated RTX 4090 Gaming Laptop",
                                 1599.99,
                                 3,
+                                "Outerwear",
                                 List.of("existing.jpg"),
                                 new MultipartFile[] { image },
                                 "seller-1",
@@ -200,6 +203,7 @@ class ProductServiceTest {
                                                 "RTX 4090 Gaming Laptop",
                                                 1999.99,
                                                 5,
+                                                "Streetwear",
                                                 null,
                                                 "seller-1",
                                                 "BUYER"));
@@ -219,6 +223,7 @@ class ProductServiceTest {
                                                 "Updated RTX 4090 Gaming Laptop",
                                                 1599.99,
                                                 3,
+                                                "Outerwear",
                                                 List.of("existing.jpg"),
                                                 null,
                                                 "another-user",
@@ -236,6 +241,7 @@ class ProductServiceTest {
                                                 "RTX 4090 Gaming Laptop",
                                                 1999.99,
                                                 5,
+                                                "Streetwear",
                                                 null,
                                                 null,
                                                 "SELLER"));
@@ -252,6 +258,7 @@ class ProductServiceTest {
                                                 "RTX 4090 Gaming Laptop",
                                                 1999.99,
                                                 5,
+                                                "Streetwear",
                                                 null,
                                                 "seller-1",
                                                 "SELLER"));
@@ -268,6 +275,7 @@ class ProductServiceTest {
                                                 "short",
                                                 1999.99,
                                                 5,
+                                                "Streetwear",
                                                 null,
                                                 "seller-1",
                                                 "SELLER"));
@@ -284,6 +292,7 @@ class ProductServiceTest {
                                                 "RTX 4090 Gaming Laptop",
                                                 -5.0,
                                                 5,
+                                                "Streetwear",
                                                 null,
                                                 "seller-1",
                                                 "SELLER"));
@@ -300,6 +309,7 @@ class ProductServiceTest {
                                                 "RTX 4090 Gaming Laptop",
                                                 1999.999,
                                                 5,
+                                                "Streetwear",
                                                 null,
                                                 "seller-1",
                                                 "SELLER"));
@@ -316,6 +326,7 @@ class ProductServiceTest {
                                                 "RTX 4090 Gaming Laptop",
                                                 1999.99,
                                                 -1,
+                                                "Streetwear",
                                                 null,
                                                 "seller-1",
                                                 "SELLER"));
@@ -337,6 +348,7 @@ class ProductServiceTest {
                                                 "RTX 4090 Gaming Laptop",
                                                 1999.99,
                                                 5,
+                                                "Streetwear",
                                                 files,
                                                 "seller-1",
                                                 "SELLER"));
@@ -359,6 +371,7 @@ class ProductServiceTest {
                                                 "RTX 4090 Gaming Laptop",
                                                 1999.99,
                                                 5,
+                                                "Streetwear",
                                                 new MultipartFile[] { invalidImage },
                                                 "seller-1",
                                                 "SELLER"));
@@ -381,6 +394,7 @@ class ProductServiceTest {
                                                 "RTX 4090 Gaming Laptop",
                                                 1999.99,
                                                 5,
+                                                "Streetwear",
                                                 new MultipartFile[] { largeImage },
                                                 "seller-1",
                                                 "SELLER"));
@@ -400,6 +414,7 @@ class ProductServiceTest {
                                                 "Updated RTX 4090 Gaming Laptop",
                                                 1599.99,
                                                 3,
+                                                "Outerwear",
                                                 List.of("1", "2", "3", "4", "5", "6"),
                                                 null,
                                                 "seller-1",
@@ -429,6 +444,7 @@ class ProductServiceTest {
                                 "RTX 4090 Gaming Laptop",
                                 1999.99,
                                 5,
+                                "Streetwear",
                                 null,
                                 "seller-1",
                                 "SELLER");

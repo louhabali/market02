@@ -16,6 +16,7 @@ import { CartService } from '../../services/cart.service';
 })
 export class ProductPageComponent implements OnInit {
   readonly DEFAULT_NO_IMAGE = '/noimage.png';
+  readonly categories = ['Streetwear', 'Outerwear', 'Accessories'];
 
   product: Product | null = null;
   form!: FormGroup;
@@ -62,7 +63,8 @@ export class ProductPageComponent implements OnInit {
       name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
       price: [0, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
       quantity: [0, [Validators.required, Validators.min(0), Validators.max(999999)]],
-      description: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(1000)]]
+      description: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(1000)]],
+      category: ['', Validators.required]
     });
   }
 
@@ -87,7 +89,8 @@ export class ProductPageComponent implements OnInit {
       name: product.name,
       price: product.price,
       quantity: product.quantity,
-      description: product.description
+      description: product.description,
+      category: product.category?.trim() || ''
     });
 
     if (product.imageUrls && product.imageUrls.length > 0) {
@@ -214,6 +217,7 @@ export class ProductPageComponent implements OnInit {
     formData.append('description', values.description.trim());
     formData.append('price', values.price.toString());
     formData.append('quantity', values.quantity.toString());
+    formData.append('category', values.category);
 
     const existingRemoteUrls = this.imagePreviews.filter(
       (url) => !url.startsWith('data:') && url !== this.DEFAULT_NO_IMAGE

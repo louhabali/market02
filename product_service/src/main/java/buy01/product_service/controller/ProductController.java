@@ -35,6 +35,7 @@ public class ProductController {
             @RequestParam String description,
             @RequestParam Double price,
             @RequestParam Integer quantity,
+            @RequestParam String category,
             @RequestParam(required = false) MultipartFile[] images
     ) {
         return productService.createProduct(
@@ -42,6 +43,7 @@ public class ProductController {
                 description,
                 price,
                 quantity,
+                category,
                 images,
                 userId,
                 userRole
@@ -55,13 +57,14 @@ public ResponseEntity<Product> updateProduct(
         @RequestParam("description") String description,
         @RequestParam("price") Double price,
         @RequestParam("quantity") Integer quantity,
+        @RequestParam("category") String category,
         @RequestParam(value = "existingImageUrls", required = false) List<String> existingImageUrls,
         @RequestPart(value = "images", required = false) MultipartFile[] images,
         @RequestHeader("X-User-Id") String userId,
         @RequestHeader("X-Role") String userRole) {
 
-    Product updated = productService.updateProduct(
-            id, name, description, price, quantity, existingImageUrls, images, userId, userRole);
+        Product updated = productService.updateProduct(
+            id, name, description, price, quantity, category, existingImageUrls, images, userId, userRole);
     return ResponseEntity.ok(updated);
 }
 

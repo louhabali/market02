@@ -25,5 +25,7 @@ public class Product {
 
     private String userId;
 
+    private String category;
+    
     private List<String> imageUrls;
 }

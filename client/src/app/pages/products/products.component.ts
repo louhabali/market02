@@ -29,7 +29,9 @@ export class ProductsComponent implements OnInit, OnDestroy {
   // Search & Filter State
   searchKeyword = '';
   selectedCategory = 'ALL';
-  maxPrice: number = 2000;
+  readonly categories = ['Streetwear', 'Outerwear', 'Accessories'];
+  minPrice: number | null = null;
+  maxPrice: number | null = null;
 
   constructor(
     private productService: ProductService,
@@ -97,9 +99,11 @@ export class ProductsComponent implements OnInit, OnDestroy {
     const kw = this.searchKeyword.toLowerCase().trim();
     this.filteredProducts = this.products.filter(p => {
       const matchesKw = !kw || p.name.toLowerCase().includes(kw) || p.description?.toLowerCase().includes(kw);
-      const matchesCategory = this.selectedCategory === 'ALL' || p.category === this.selectedCategory;
-      const matchesPrice = !p.price || p.price <= this.maxPrice;
-      return matchesKw && matchesCategory && matchesPrice;
+      const productCategory = p.category?.trim() || 'UNCATEGORIZED';
+      const matchesCategory = this.selectedCategory === 'ALL' || productCategory === this.selectedCategory;
+      const matchesMinPrice = this.minPrice === null || p.price >= this.minPrice;
+      const matchesMaxPrice = this.maxPrice === null || p.price <= this.maxPrice;
+      return matchesKw && matchesCategory && matchesMinPrice && matchesMaxPrice;
     });
   }
 

@@ -28,6 +28,8 @@ public class ProductService {
             "image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "image/x-avif");
     private static final long MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
     private static final int MAX_IMAGES_COUNT = 5;
+        private static final List<String> ALLOWED_CATEGORIES = Arrays.asList(
+            "Streetwear", "Outerwear", "Accessories");
 
     public List<Product> getAllProducts() {
         return repository.findAll();
@@ -43,6 +45,7 @@ public class ProductService {
             String description,
             Double price,
             Integer quantity,
+            String category,
             MultipartFile[] images,
             String userId,
             String userRole) {
@@ -53,7 +56,7 @@ public class ProductService {
             throw new ForbiddenException("You do not have permission to perform this action.");
         }
 
-        validateProductDetails(name, description, price, quantity);
+        String validatedCategory = validateProductDetails(name, description, price, quantity, category);
 
         List<String> imageUrls = new ArrayList<>();
         if (hasValidImages(images)) {
@@ -66,6 +69,7 @@ public class ProductService {
                 .price(price)
                 .quantity(quantity)
                 .userId(userId)
+                .category(validatedCategory)
                 .imageUrls(imageUrls)
                 .build();
 
@@ -78,6 +82,7 @@ public class ProductService {
             String description,
             Double price,
             Integer quantity,
+            String category,
             List<String> existingImageUrls,
             MultipartFile[] newImages,
             String userId,
@@ -86,12 +91,13 @@ public class ProductService {
         Product product = getProduct(id);
         verifyOwnership(product, userId);
 
-        validateProductDetails(name, description, price, quantity);
+        String validatedCategory = validateProductDetails(name, description, price, quantity, category);
 
         product.setName(name.trim());
         product.setDescription(description.trim());
         product.setPrice(price);
         product.setQuantity(quantity);
+        product.setCategory(validatedCategory);
 
         // 1. Start with remaining existing URLs passed from frontend
         List<String> finalImageUrls = new ArrayList<>();
@@ -146,7 +152,8 @@ public class ProductService {
         }
     }
 
-    private void validateProductDetails(String name, String description, Double price, Integer quantity) {
+        private String validateProductDetails(
+            String name, String description, Double price, Integer quantity, String category) {
         if (name == null || name.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product name is required.");
         }
@@ -187,6 +194,16 @@ public class ProductService {
         if (quantity > 999999) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity cannot exceed 999,999 units.");
         }
+
+        if (category == null || category.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category is required.");
+        }
+        String trimmedCategory = category.trim();
+        if (!ALLOWED_CATEGORIES.contains(trimmedCategory)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Category must be one of: " + String.join(", ", ALLOWED_CATEGORIES) + ".");
+        }
+        return trimmedCategory;
     }
 
     private void validateImages(MultipartFile[] images) {
