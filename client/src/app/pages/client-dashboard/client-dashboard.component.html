@@ -81,10 +81,16 @@
           </span>
         </div>
 
+        <div class="grid sm:grid-cols-3 gap-3 text-xs text-gray-500">
+          <p><span class="font-bold text-[#001830] uppercase tracking-wider">Customer</span><br>{{ order.customerId }}</p>
+          <p><span class="font-bold text-[#001830] uppercase tracking-wider">Placed</span><br>{{ order.createdAt | date:'medium' }}</p>
+          <p><span class="font-bold text-[#001830] uppercase tracking-wider">Updated</span><br>{{ order.updatedAt ? (order.updatedAt | date:'medium') : 'Not updated' }}</p>
+        </div>
+
         <div class="divide-y divide-gray-100">
           <div *ngFor="let item of order.items" class="py-2 flex justify-between text-sm">
             <span class="text-gray-700 font-medium">{{ item.productName }} <span class="text-xs text-gray-400">(×{{ item.quantity }})</span></span>
-            <span class="font-mono text-gray-900">${{ (item.price * item.quantity) | number:'1.2-2' }}</span>
+            <span class="font-mono text-gray-900">${{ (item.priceAtPurchase * item.quantity) | number:'1.2-2' }}</span>
           </div>
         </div>
 
@@ -100,6 +106,21 @@
               class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-3 py-1.5 rounded-md border border-blue-200 transition">
               Redo Order ↺
             </button>
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-4 pt-3 border-t border-gray-100 text-xs text-gray-600">
+          <div>
+            <span class="font-bold text-[#001830] uppercase tracking-wider">Payment</span>
+            <p class="mt-1">{{ order.paymentMethod || 'Not specified' }}</p>
+          </div>
+          <div>
+            <span class="font-bold text-[#001830] uppercase tracking-wider">Shipping</span>
+            <p class="mt-1" *ngIf="order.shippingAddress as address">
+              {{ address.fullName }} | {{ address.phone }}<br>
+              {{ address.streetAddress }}, {{ address.city }} {{ address.postalCode }}
+            </p>
+            <p class="mt-1" *ngIf="!order.shippingAddress">Not specified</p>
           </div>
         </div>
       </div>

@@ -34,4 +34,5 @@ export interface Order {
   paymentMethod: string;
   shippingAddress: ShippingAddress;
   createdAt: string;
+  updatedAt?: string;
 }

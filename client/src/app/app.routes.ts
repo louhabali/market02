@@ -12,6 +12,7 @@ import { CartComponent } from './pages/cart/cart.component';
 import { CheckoutComponent } from './pages/checkout/checkout.component';
 import { SellerDashboardComponent } from './pages/seller-dashboard/seller-dashboard.component';
 import { roleGuard } from '../guards/role.guard';
+import { ClientDashboardComponent } from './pages/client-dashboard/client-dashboard.component';
 export const routes: Routes = [
   {
     path: '',
@@ -54,6 +55,11 @@ export const routes: Routes = [
     path: 'checkout',
     component : CheckoutComponent ,
     canActivate : [authGuard]
+  },
+  {
+    path: 'orders',
+    component: ClientDashboardComponent,
+    canActivate: [authGuard]
   },
 
   { path: 'products/add', component: AddProductComponent, canActivate: [authGuard] },

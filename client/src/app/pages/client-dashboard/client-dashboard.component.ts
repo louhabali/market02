@@ -2,7 +2,8 @@ import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { OrderService, Order } from '../../services/order.service';
+import { OrderService } from '../../services/order.service';
+import { Order } from '../../models/order.model';
 import { CartService } from '../../services/cart.service';
 
 export interface ClientAnalytics {
@@ -30,14 +31,10 @@ export class ClientDashboardComponent implements OnInit {
   statusFilter = 'ALL';
 
   analytics: ClientAnalytics = {
-    totalSpent: 450.00,
-    totalOrders: 8,
-    topCategory: 'Outerwear',
-    mostBoughtProducts: [
-      { name: 'Oversized Streetwear Hoodie', quantity: 4, amount: 240.00 },
-      { name: 'Vintage Denim Jacket', quantity: 2, amount: 150.00 },
-      { name: 'Cargo Pants (Black)', quantity: 2, amount: 60.00 }
-    ]
+    totalSpent: 0,
+    totalOrders: 0,
+    topCategory: 'N/A',
+    mostBoughtProducts: []
   };
 
   ngOnInit(): void {
@@ -46,9 +43,10 @@ export class ClientDashboardComponent implements OnInit {
 
   fetchOrders(): void {
     this.loading = true;
-    this.orderService.getUserOrders().subscribe({
+    this.orderService.getMyOrders().subscribe({
       next: (data) => {
         this.orders = data || [];
+        this.updateAnalytics();
         this.filterOrders();
         this.loading = false;
         this.cdr.detectChanges();
@@ -60,11 +58,38 @@ export class ClientDashboardComponent implements OnInit {
     });
   }
 
+  private updateAnalytics(): void {
+    const productTotals = new Map<string, { quantity: number; amount: number }>();
+
+    this.analytics = {
+      totalSpent: this.orders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0),
+      totalOrders: this.orders.length,
+      topCategory: 'N/A',
+      mostBoughtProducts: []
+    };
+
+    this.orders.forEach(order => order.items?.forEach(item => {
+      const current = productTotals.get(item.productId) || { quantity: 0, amount: 0 };
+      current.quantity += item.quantity || 0;
+      current.amount += Number(item.priceAtPurchase || 0) * (item.quantity || 0);
+      productTotals.set(item.productId, current);
+    }));
+
+    this.analytics.mostBoughtProducts = Array.from(productTotals.entries())
+      .map(([productId, totals]) => ({
+        name: this.orders.flatMap(order => order.items || [])
+          .find(item => item.productId === productId)?.productName || 'Unknown product',
+        ...totals
+      }))
+      .sort((first, second) => second.quantity - first.quantity)
+      .slice(0, 3);
+  }
+
   filterOrders(): void {
     const q = this.searchQuery.toLowerCase().trim();
     this.filteredOrders = this.orders.filter(order => {
       const matchesSearch = !q || order.id?.toLowerCase().includes(q) || 
-        order.items.some(i => i.productName.toLowerCase().includes(q));
+        order.items?.some(i => i.productName.toLowerCase().includes(q));
       const matchesStatus = this.statusFilter === 'ALL' || order.status === this.statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -79,8 +104,14 @@ export class ClientDashboardComponent implements OnInit {
   }
 
   redoOrder(order: Order): void {
-    order.items.forEach(item => {
-      this.cartService.addToCart(item.productId, item.quantity, item.price, item.productName).subscribe();
+    order.items?.forEach(item => {
+      this.cartService.addToCart({
+        productId: item.productId,
+        sellerId: item.sellerId,
+        productName: item.productName,
+        price: item.priceAtPurchase,
+        quantity: item.quantity
+      }).subscribe();
     });
     alert('Items re-added to your cart!');
   }
