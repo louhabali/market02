@@ -155,6 +155,9 @@ public class CartService {
     public void cleanupExpiredMongoCarts() {
         long currentTime = Instant.now().getEpochSecond();
         cartMongoRepository.deleteByExpiresAtBefore(currentTime);
+        long afterCount = cartMongoRepository.count();
+
+        log.info("📊 MongoDB tzaaaaaaaaaaaad fiha {} carts", afterCount);
         log.info("Cleaned up expired carts from MongoDB");
     }
 
