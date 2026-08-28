@@ -1,6 +1,7 @@
 package buy01.cart_service.service;
 
 import buy01.cart_service.dto.AddToCartRequest;
+import buy01.cart_service.dto.UpdateQuantityRequest;
 import buy01.cart_service.model.CartItem;
 import buy01.cart_service.model.ShoppingCart;
 import buy01.cart_service.repo.CartRepository;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -51,6 +53,19 @@ public class CartService {
     public ShoppingCart removeItemFromCart(String userId, String productId) {
         ShoppingCart cart = getCart(userId);
         cart.getItems().removeIf(item -> item.getProductId().equals(productId));
+        return cartRepository.save(cart);
+    }
+
+    public ShoppingCart updateItemQuantity(String userId, UpdateQuantityRequest request) {
+        ShoppingCart cart = getCart(userId);
+
+        CartItem item = cart.getItems().stream()
+                .filter(cartItem -> cartItem.getProductId().equals(request.getProductId()))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Product not found in cart: " + request.getProductId()));
+
+        item.setQuantity(request.getQuantity());
         return cartRepository.save(cart);
     }
 

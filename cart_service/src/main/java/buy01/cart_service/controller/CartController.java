@@ -1,6 +1,7 @@
 package buy01.cart_service.controller;
 
 import buy01.cart_service.dto.AddToCartRequest;
+import buy01.cart_service.dto.UpdateQuantityRequest;
 import buy01.cart_service.model.ShoppingCart;
 import buy01.cart_service.service.CartService;
 import jakarta.validation.Valid;
@@ -25,6 +26,13 @@ public class CartController {
             @RequestHeader("X-User-Id") String userId,
             @Valid @RequestBody AddToCartRequest request) {
         return ResponseEntity.ok(cartService.addItemToCart(userId, request));
+    }
+
+    @PutMapping("/items")
+    public ResponseEntity<ShoppingCart> updateItemQuantity(
+            @RequestHeader("X-User-Id") String userId,
+            @Valid @RequestBody UpdateQuantityRequest request) {
+        return ResponseEntity.ok(cartService.updateItemQuantity(userId, request));
     }
 
     @DeleteMapping("/items/{productId}")
