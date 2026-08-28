@@ -80,6 +80,10 @@ public class CartService {
 
         cartRepository.save(cart);
         redisTemplate.opsForSet().add(ACTIVE_CARTS_KEY, userId);
+
+        // Save to Redis ONLY
+        log.info("cart tzaaaaaaaaaad fe redis: {}", userId);
+        log.info("Redis TTL: 7 days (604800 seconds)");
         
         log.debug("Cart saved to Redis for user: {} (TTL 7 days)", userId);
         return cart;
