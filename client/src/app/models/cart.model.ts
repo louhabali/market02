@@ -2,6 +2,7 @@ export interface CartItem {
   productId: string;
   sellerId: string;
   productName: string;
+  category?: string;
   imageUrl?: string;
   price: number;
   quantity: number;
@@ -17,6 +18,7 @@ export interface AddToCartRequest {
   productId: string;
   sellerId: string;
   productName: string;
+  category?: string;
   imageUrl?: string;
   price: number;
   quantity: number;

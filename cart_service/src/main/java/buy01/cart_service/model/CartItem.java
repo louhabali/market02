@@ -15,6 +15,7 @@ public class CartItem {
     private String productId;
     private String sellerId;
     private String productName;
+    private String category;
     private String imageUrl;
     private BigDecimal price;
     private Integer quantity;

@@ -10,6 +10,7 @@ export interface ClientAnalytics {
   totalSpent: number;
   totalOrders: number;
   topCategory: string;
+  categories: { name: string; quantity: number }[];
   mostBoughtProducts: { name: string; quantity: number; amount: number }[];
 }
 
@@ -34,6 +35,7 @@ export class ClientDashboardComponent implements OnInit {
     totalSpent: 0,
     totalOrders: 0,
     topCategory: 'N/A',
+    categories: [],
     mostBoughtProducts: []
   };
 
@@ -60,19 +62,24 @@ export class ClientDashboardComponent implements OnInit {
 
   private updateAnalytics(): void {
     const productTotals = new Map<string, { quantity: number; amount: number }>();
+    const categoryTotals = new Map<string, number>();
 
+    const completedOrders = this.orders.filter(order => order.status !== 'CANCELLED');
     this.analytics = {
-      totalSpent: this.orders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0),
+      totalSpent: completedOrders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0),
       totalOrders: this.orders.length,
       topCategory: 'N/A',
+      categories: [],
       mostBoughtProducts: []
     };
 
-    this.orders.forEach(order => order.items?.forEach(item => {
+    completedOrders.forEach(order => order.items?.forEach(item => {
       const current = productTotals.get(item.productId) || { quantity: 0, amount: 0 };
       current.quantity += item.quantity || 0;
       current.amount += Number(item.priceAtPurchase || 0) * (item.quantity || 0);
       productTotals.set(item.productId, current);
+      const category = item.category?.trim() || 'Uncategorized';
+      categoryTotals.set(category, (categoryTotals.get(category) || 0) + (item.quantity || 0));
     }));
 
     this.analytics.mostBoughtProducts = Array.from(productTotals.entries())
@@ -83,6 +90,11 @@ export class ClientDashboardComponent implements OnInit {
       }))
       .sort((first, second) => second.quantity - first.quantity)
       .slice(0, 3);
+
+    this.analytics.categories = Array.from(categoryTotals.entries())
+      .map(([name, quantity]) => ({ name, quantity }))
+      .sort((first, second) => second.quantity - first.quantity);
+    this.analytics.topCategory = this.analytics.categories[0]?.name || 'N/A';
   }
 
   filterOrders(): void {
@@ -109,6 +121,7 @@ export class ClientDashboardComponent implements OnInit {
         productId: item.productId,
         sellerId: item.sellerId,
         productName: item.productName,
+        category: item.category,
         price: item.priceAtPurchase,
         quantity: item.quantity
       }).subscribe();

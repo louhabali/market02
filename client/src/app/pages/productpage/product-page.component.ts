@@ -117,6 +117,7 @@ export class ProductPageComponent implements OnInit {
       productId: this.product.id!,
       sellerId: this.product.userId!,
       productName: this.product.name,
+      category: this.product.category,
       imageUrl: this.product.imageUrls?.[0] || this.DEFAULT_NO_IMAGE,
       price: this.product.price,
       quantity: 1

@@ -25,6 +25,8 @@ public class AddToCartRequest {
     @NotBlank(message = "Product name is required")
     private String productName;
 
+    private String category;
+
     private String imageUrl;
 
     @NotNull(message = "Price is required")

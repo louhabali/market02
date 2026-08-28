@@ -37,6 +37,7 @@ export class CheckoutComponent {
         productId: item.productId,
         sellerId: item.sellerId,
         productName: item.productName,
+        category: item.category,
         price: item.price,
         quantity: item.quantity
       })),

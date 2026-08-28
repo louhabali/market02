@@ -1,6 +1,7 @@
 package buy01.order_service.service;
 
 import buy01.order_service.dto.CreateOrderRequest;
+import buy01.order_service.dto.SellerAnalyticsResponse;
 import buy01.order_service.event.OrderCreatedEvent;
 import buy01.order_service.event.OrderEventPublisher;
 import buy01.order_service.exception.OrderNotFoundException;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,7 @@ public class OrderService {
                         .productId(dto.getProductId())
                         .sellerId(dto.getSellerId())
                         .productName(dto.getProductName())
+                        .category(dto.getCategory())
                         .priceAtPurchase(dto.getPrice())
                         .quantity(dto.getQuantity())
                         .build())
@@ -82,6 +86,52 @@ public class OrderService {
 
     public List<Order> getSellerOrders(String sellerId) {
         return orderRepository.findBySellerId(sellerId);
+    }
+
+    public SellerAnalyticsResponse getSellerAnalytics(String sellerId) {
+        List<Order> orders = getSellerOrders(sellerId).stream()
+                .filter(order -> order.getStatus() != OrderStatus.CANCELLED)
+                .toList();
+        Map<String, SellerAnalyticsResponse.TopProduct> products = new HashMap<>();
+
+        for (Order order : orders) {
+            for (OrderItem item : order.getItems() == null ? List.<OrderItem>of() : order.getItems()) {
+                if (!sellerId.equals(item.getSellerId())) {
+                    continue;
+                }
+                SellerAnalyticsResponse.TopProduct current = products.get(item.getProductId());
+                BigDecimal revenue = item.getPriceAtPurchase()
+                        .multiply(BigDecimal.valueOf(item.getQuantity()));
+                if (current == null) {
+                    products.put(item.getProductId(), SellerAnalyticsResponse.TopProduct.builder()
+                            .productId(item.getProductId())
+                            .name(item.getProductName())
+                            .unitsSold(item.getQuantity())
+                            .revenue(revenue)
+                            .build());
+                } else {
+                    current.setUnitsSold(current.getUnitsSold() + item.getQuantity());
+                    current.setRevenue(current.getRevenue().add(revenue));
+                }
+            }
+        }
+
+        List<SellerAnalyticsResponse.TopProduct> topProducts = products.values().stream()
+                .sorted((first, second) -> Long.compare(second.getUnitsSold(), first.getUnitsSold()))
+                .toList();
+        BigDecimal totalRevenue = topProducts.stream()
+                .map(SellerAnalyticsResponse.TopProduct::getRevenue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long totalUnitsSold = topProducts.stream()
+                .mapToLong(SellerAnalyticsResponse.TopProduct::getUnitsSold)
+                .sum();
+
+        return SellerAnalyticsResponse.builder()
+                .totalRevenue(totalRevenue)
+                .totalUnitsSold(totalUnitsSold)
+                .totalOrders(orders.size())
+                .topProducts(topProducts)
+                .build();
     }
 
     public Order updateOrderStatus(String orderId, OrderStatus newStatus) {

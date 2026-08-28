@@ -40,6 +40,7 @@ public class CartService {
                     .productId(request.getProductId())
                     .sellerId(request.getSellerId())
                     .productName(request.getProductName())
+                    .category(request.getCategory())
                     .imageUrl(request.getImageUrl())
                     .price(request.getPrice())
                     .quantity(request.getQuantity())

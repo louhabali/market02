@@ -1,6 +1,7 @@
 package buy01.order_service.controller;
 
 import buy01.order_service.dto.CreateOrderRequest;
+import buy01.order_service.dto.SellerAnalyticsResponse;
 import buy01.order_service.dto.UpdateOrderStatusRequest;
 import buy01.order_service.model.Order;
 import buy01.order_service.service.OrderService;
@@ -40,6 +41,16 @@ public class OrderController {
     @GetMapping("/seller")
     public ResponseEntity<List<Order>> getSellerOrders(@RequestHeader("X-User-Id") String sellerId) {
         return ResponseEntity.ok(orderService.getSellerOrders(sellerId));
+    }
+
+    @GetMapping("/seller/analytics")
+    public ResponseEntity<SellerAnalyticsResponse> getSellerAnalytics(
+            @RequestHeader("X-User-Id") String sellerId,
+            @RequestHeader("X-Role") String userRole) {
+        if (!"SELLER".equalsIgnoreCase(userRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(orderService.getSellerAnalytics(sellerId));
     }
 
     @PatchMapping("/{orderId}/status")

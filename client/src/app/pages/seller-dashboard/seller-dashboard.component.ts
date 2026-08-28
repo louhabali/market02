@@ -7,7 +7,7 @@ export interface SellerAnalytics {
   totalRevenue: number;
   totalUnitsSold: number;
   totalOrders: number;
-  topProducts: { name: string; unitsSold: number; revenue: number }[];
+  topProducts: { productId: string; name: string; unitsSold: number; revenue: number }[];
 }
 
 @Component({
@@ -21,14 +21,10 @@ export class SellerDashboardComponent implements OnInit {
 
   loading = true;
   analytics: SellerAnalytics = {
-    totalRevenue: 3420.50,
-    totalUnitsSold: 142,
-    totalOrders: 38,
-    topProducts: [
-      { name: 'Oversized Streetwear Hoodie', unitsSold: 54, revenue: 1620.00 },
-      { name: 'Vintage Denim Jacket', unitsSold: 32, revenue: 960.00 },
-      { name: 'Cargo Pants (Black)', unitsSold: 28, revenue: 560.00 }
-    ]
+    totalRevenue: 0,
+    totalUnitsSold: 0,
+    totalOrders: 0,
+    topProducts: []
   };
 
   ngOnInit(): void {
@@ -37,13 +33,12 @@ export class SellerDashboardComponent implements OnInit {
 
   fetchAnalytics(): void {
     this.loading = true;
-    this.http.get<SellerAnalytics>('/api/v1/sellers/analytics').subscribe({
+    this.http.get<SellerAnalytics>('/api/v1/orders/seller/analytics').subscribe({
       next: (data) => {
         if (data) this.analytics = data;
         this.loading = false;
       },
       error: () => {
-        // Fallback to initial display state if analytics endpoint is offline
         this.loading = false;
       }
     });

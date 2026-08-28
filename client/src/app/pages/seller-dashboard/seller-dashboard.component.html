@@ -67,7 +67,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-sm font-semibold text-[#001830]">
-              <tr *for="let item of analytics.topProducts" class="hover:bg-gray-50/80 transition-colors">
+              <tr *ngFor="let item of analytics.topProducts" class="hover:bg-gray-50/80 transition-colors">
                 <td class="py-4">{{ item.name }}</td>
                 <td class="py-4 text-center font-mono">{{ item.unitsSold }}</td>
                 <td class="py-4 text-right font-mono text-emerald-700">${{ item.revenue | number:'1.2-2' }}</td>
@@ -75,6 +75,24 @@
             </tbody>
           </table>
         </div>
+      </div>
+
+      <!-- Units Sold Chart -->
+      <div class="bg-white rounded-2xl border border-[#001830]/10 shadow-2xl p-6">
+        <h2 class="text-lg font-black text-[#001830] uppercase tracking-wider mb-6 pb-4 border-b border-[#001830]/10">Units Sold by Product</h2>
+        <div *ngIf="analytics.topProducts.length > 0" class="space-y-4">
+          <div *ngFor="let item of analytics.topProducts">
+            <div class="flex justify-between text-xs font-bold text-[#001830] mb-1.5">
+              <span class="truncate pr-4">{{ item.name }}</span>
+              <span class="font-mono text-gray-500 shrink-0">{{ item.unitsSold }} units</span>
+            </div>
+            <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                [style.width.%]="(item.unitsSold / analytics.topProducts[0].unitsSold) * 100"></div>
+            </div>
+          </div>
+        </div>
+        <p *ngIf="analytics.topProducts.length === 0" class="text-sm text-gray-400">No sales data available yet.</p>
       </div>
 
     </div>

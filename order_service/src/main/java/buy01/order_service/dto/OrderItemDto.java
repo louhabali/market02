@@ -25,6 +25,8 @@ public class OrderItemDto {
     @NotBlank(message = "Product name is required")
     private String productName;
 
+    private String category;
+
     @NotNull(message = "Price is required")
     @Min(value = 0, message = "Price cannot be negative")
     private BigDecimal price;

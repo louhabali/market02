@@ -40,6 +40,24 @@
       </div>
     </div>
 
+    <!-- Category Chart -->
+    <div class="bg-white rounded-2xl border border-[#001830]/10 p-6 shadow-xl">
+      <h2 class="text-lg font-black text-[#001830] uppercase tracking-wider mb-5 pb-3 border-b border-gray-200">Units by Category</h2>
+      <div *ngIf="analytics.categories.length > 0" class="space-y-4">
+        <div *ngFor="let category of analytics.categories">
+          <div class="flex justify-between text-xs font-bold text-[#001830] mb-1.5">
+            <span>{{ category.name }}</span>
+            <span class="font-mono text-gray-500">{{ category.quantity }} units</span>
+          </div>
+          <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full bg-blue-600 rounded-full transition-all duration-700"
+              [style.width.%]="(category.quantity / analytics.categories[0].quantity) * 100"></div>
+          </div>
+        </div>
+      </div>
+      <p *ngIf="analytics.categories.length === 0" class="text-sm text-gray-400">No category data available yet.</p>
+    </div>
+
     <!-- Orders Management & History -->
     <div class="bg-white rounded-2xl border border-[#001830]/10 p-6 shadow-xl space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-200">
