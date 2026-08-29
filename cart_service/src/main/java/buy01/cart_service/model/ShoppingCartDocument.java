@@ -26,7 +26,4 @@ public class ShoppingCartDocument {
 
     private BigDecimal totalAmount;
 
-     private Long createdAt;
-
-    private Long expiresAt;
 }
