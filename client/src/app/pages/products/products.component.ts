@@ -34,7 +34,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
   // Pagination state
   currentPage = 0;
-  pageSize = 12;
+  pageSize = 10;
   totalPages = 0;
   totalElements = 0;
 
