@@ -1,5 +1,5 @@
-<!-- Main Page Content (Shown after initialization delay) -->
-<div *ngIf="!isLoading && !userLoading" class="min-h-screen bg-[#0a1120] p-6 sm:p-12 antialiased font-sans">
+<!-- Main Page Content -->
+<div *ngIf="!initialLoading && !userLoading" class="min-h-screen bg-[#0a1120] p-6 sm:p-12 antialiased font-sans">
   <div class="max-w-7xl mx-auto space-y-8">
 
     <!-- Header Section -->
@@ -15,13 +15,11 @@
 
       <!-- Actions -->
       <div class="flex items-center min-h-[48px]">
-        <!-- Not Authenticated -->
         <a *ngIf="!currentUser" routerLink="/login"
           class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-widest px-6 py-3.5 rounded-lg transition shadow-md flex items-center gap-2 cursor-pointer">
           Authenticate
         </a>
 
-        <!-- Seller -->
         <a *ngIf="currentUser && canAddProduct" routerLink="/products/add"
           class="bg-white hover:bg-gray-100 text-[#001830] font-bold text-xs uppercase tracking-widest px-6 py-3.5 rounded-lg transition shadow-md flex items-center gap-2 cursor-pointer">
           Add New Product
@@ -33,29 +31,26 @@
     <div class="bg-[#001830] border border-white/10 rounded-2xl p-5 grid sm:grid-cols-4 gap-4 shadow-xl">
       <div>
         <label class="block text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-1.5">Keyword Search</label>
-        <input type="text" [(ngModel)]="searchKeyword" (ngModelChange)="applyFilters()" placeholder="Search by name or keyword..."
+        <input type="text" [(ngModel)]="searchKeyword" (ngModelChange)="onFilterChange()" placeholder="Search by name..."
           class="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-blue-500">
       </div>
 
       <div>
         <label class="block text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-1.5">Category Filter</label>
-        <select [(ngModel)]="selectedCategory" (ngModelChange)="applyFilters()"
+        <select [(ngModel)]="selectedCategory" (ngModelChange)="onFilterChange()"
           class="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-blue-500">
           <option value="ALL">All Categories</option>
-          <option value="Streetwear">Streetwear</option>
-          <option value="Outerwear">Outerwear</option>
-          <option value="Accessories">Accessories</option>
-          <option value="UNCATEGORIZED">Uncategorized</option>
+          <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
         </select>
       </div>
 
       <div class="sm:col-span-2">
         <label class="block text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-1.5">Price Range</label>
         <div class="grid grid-cols-2 gap-3">
-          <input type="number" min="0" step="0.01" [(ngModel)]="minPrice" (ngModelChange)="applyFilters()"
+          <input type="number" min="0" step="0.01" [(ngModel)]="minPrice" (ngModelChange)="onFilterChange()"
             placeholder="From"
             class="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-blue-500">
-          <input type="number" min="0" step="0.01" [(ngModel)]="maxPrice" (ngModelChange)="applyFilters()"
+          <input type="number" min="0" step="0.01" [(ngModel)]="maxPrice" (ngModelChange)="onFilterChange()"
             placeholder="To"
             class="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-blue-500">
         </div>
@@ -67,8 +62,14 @@
       {{ error }}
     </div>
 
+    <!-- Inline Grid Loading Spinner (For searches/filter/pagination changes) -->
+    <div *ngIf="isFiltering" class="flex flex-col justify-center items-center py-16 space-y-3">
+      <div class="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+      <span class="text-xs font-mono text-gray-400 uppercase tracking-widest animate-pulse">Filtering Catalog...</span>
+    </div>
+
     <!-- Empty State -->
-    <div *ngIf="filteredProducts.length === 0"
+    <div *ngIf="!isFiltering && products.length === 0"
       class="bg-white/5 border border-white/10 rounded-2xl p-16 text-center max-w-lg mx-auto">
       <div class="text-4xl mb-4">📦</div>
       <h3 class="text-xl font-bold text-white uppercase tracking-wider">
@@ -80,10 +81,10 @@
     </div>
 
     <!-- Product Grid -->
-    <div *ngIf="filteredProducts.length > 0"
+    <div *ngIf="!isFiltering && products.length > 0"
       class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <app-product-card
-        *ngFor="let product of filteredProducts"
+        *ngFor="let product of products"
         [product]="product"
         [currentUserId]="authService.getUserId()"
         [currentUserRole]="authService.getRole()"
@@ -91,11 +92,32 @@
       </app-product-card>
     </div>
 
+    <!-- Pagination Controls -->
+    <div *ngIf="!isFiltering && totalPages > 1" class="flex justify-center items-center gap-4 pt-8 border-t border-white/10">
+      <button 
+        [disabled]="currentPage === 0" 
+        (click)="goToPage(currentPage - 1)"
+        class="px-4 py-2 bg-slate-900 border border-white/10 hover:bg-slate-800 rounded-lg text-xs font-semibold text-white disabled:opacity-40 transition">
+        Previous
+      </button>
+      
+      <span class="text-xs font-mono text-gray-400 uppercase tracking-widest">
+        Page {{ currentPage + 1 }} of {{ totalPages }}
+      </span>
+
+      <button 
+        [disabled]="currentPage === totalPages - 1" 
+        (click)="goToPage(currentPage + 1)"
+        class="px-4 py-2 bg-slate-900 border border-white/10 hover:bg-slate-800 rounded-lg text-xs font-semibold text-white disabled:opacity-40 transition">
+        Next
+      </button>
+    </div>
+
   </div>
 </div>
 
-<!-- Full Screen Loading Overlay (Shown during initialization timer) -->
-<div *ngIf="isLoading || userLoading" class="min-h-screen bg-[#0a1120] flex flex-col justify-center items-center p-6">
+<!-- Main Page Initial Loading Overlay -->
+<div *ngIf="initialLoading || userLoading" class="min-h-screen bg-[#0a1120] flex flex-col justify-center items-center p-6">
   <div class="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
   <div class="animate-pulse text-white text-sm font-mono uppercase tracking-widest">
     Fetching Marketplace Registry...

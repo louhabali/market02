@@ -2,8 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Subscription, forkJoin, timer, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 import { ProductService } from '../../services/product.service';
 import { AuthService, ProfileResponse } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
@@ -18,20 +17,26 @@ import { ProductCardComponent } from '../../../shared/product-card/product-card.
 })
 export class ProductsComponent implements OnInit, OnDestroy {
   products: Product[] = [];
-  filteredProducts: Product[] = [];
   
-  isLoading = true;
+  initialLoading = true;
+  isFiltering = false;
   userLoading = true;
   error: string | null = null;
   currentUser: ProfileResponse | null = null;
   private userSub!: Subscription;
 
-  // Search & Filter State
+  // Search & Filter state
   searchKeyword = '';
   selectedCategory = 'ALL';
   readonly categories = ['Streetwear', 'Outerwear', 'Accessories'];
   minPrice: number | null = null;
   maxPrice: number | null = null;
+
+  // Pagination state
+  currentPage = 0;
+  pageSize = 12;
+  totalPages = 0;
+  totalElements = 0;
 
   constructor(
     private productService: ProductService,
@@ -41,18 +46,18 @@ export class ProductsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // 1. Listen for user profile state
     this.userSub = this.userService.user$.subscribe({
       next: (user) => {
         this.currentUser = user;
+        this.userLoading = false;
       },
       error: () => {
         this.currentUser = null;
+        this.userLoading = false;
       }
     });
 
-    // 2. Load products with parallel delay execution
-    this.loadDataWithDelay();
+    this.fetchProducts(true);
   }
 
   get canAddProduct(): boolean {
@@ -61,65 +66,64 @@ export class ProductsComponent implements OnInit, OnDestroy {
     return normalizedRole === 'SELLER';
   }
 
-  loadDataWithDelay(): void {
-    this.isLoading = true;
-    this.userLoading = true;
+  // Fetch paginated & filtered products from backend
+  fetchProducts(isInitial: boolean = false): void {
+    if (isInitial) {
+      this.initialLoading = true;
+    } else {
+      this.isFiltering = true;
+    }
     this.error = null;
 
-    // Run a 1000ms timer and the API request in parallel
-    forkJoin({
-      timerDelay: timer(1000),
-      productsData: this.productService.getAllProducts().pipe(
-        catchError((err) => {
-          console.error('Failed to load products', err);
-          this.error = 'Could not fetch products from backend.';
-          return of([]);
-        })
-      )
-    }).subscribe(({ productsData }) => {
-      if (Array.isArray(productsData)) {
-        this.products = productsData.map((p: any) => ({
+    this.productService.searchProducts(
+      this.searchKeyword,
+      this.selectedCategory,
+      this.minPrice,
+      this.maxPrice,
+      this.currentPage,
+      this.pageSize
+    ).subscribe({
+      next: (res) => {
+        this.products = (res.content || []).map((p: any) => ({
           ...p,
           id: p.id || p._id || (p._id && p._id.$oid ? p._id.$oid : '')
         }));
-        this.applyFilters();
-      } else {
-        this.products = [];
-        this.filteredProducts = [];
+        this.totalPages = res.totalPages;
+        this.totalElements = res.totalElements;
+        this.initialLoading = false;
+        this.isFiltering = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to load products', err);
+        this.error = 'Could not fetch products from backend.';
+        this.initialLoading = false;
+        this.isFiltering = false;
+        this.cdr.detectChanges();
       }
-
-      // Hide both loaders at the exact same moment
-      this.isLoading = false;
-      this.userLoading = false;
-      this.cdr.detectChanges();
     });
   }
 
-  applyFilters(): void {
-    const kw = this.searchKeyword.toLowerCase().trim();
-    this.filteredProducts = this.products.filter(p => {
-      const matchesKw = !kw || p.name.toLowerCase().includes(kw) || p.description?.toLowerCase().includes(kw);
-      const productCategory = p.category?.trim() || 'UNCATEGORIZED';
-      const matchesCategory = this.selectedCategory === 'ALL' || productCategory === this.selectedCategory;
-      const matchesMinPrice = this.minPrice === null || p.price >= this.minPrice;
-      const matchesMaxPrice = this.maxPrice === null || p.price <= this.maxPrice;
-      return matchesKw && matchesCategory && matchesMinPrice && matchesMaxPrice;
-    });
+  // Reset to first page on filter input
+  onFilterChange(): void {
+    this.currentPage = 0;
+    this.fetchProducts(false);
+  }
+
+  // Pagination page navigation
+  goToPage(page: number): void {
+    if (page >= 0 && page < this.totalPages) {
+      this.currentPage = page;
+      this.fetchProducts(false);
+    }
   }
 
   onDeleteProduct(productId: string): void {
-    if (!productId) {
-      console.error('Cannot delete: Product ID is empty');
-      return;
-    }
+    if (!productId) return;
 
     this.productService.deleteProduct(productId).subscribe({
       next: () => {
-        this.products = this.products.filter(
-          (p) => p.id !== productId && (p as any)._id !== productId
-        );
-        this.applyFilters();
-        this.cdr.detectChanges();
+        this.fetchProducts(false);
       },
       error: (err) => {
         console.error('Failed to delete product', err);

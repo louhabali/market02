@@ -6,11 +6,17 @@ import buy01.product_service.model.Product;
 import buy01.product_service.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.Pageable;
+
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -23,6 +29,7 @@ public class ProductService {
 
     private final ProductRepository repository;
     private final MediaClient mediaClient;
+    private final MongoTemplate mongoTemplate;
 
     private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
             "image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "image/x-avif");
@@ -39,6 +46,51 @@ public class ProductService {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
     }
+
+    
+    // Search and filter products with pagination
+    public Page<Product> searchProducts(
+            String keyword, 
+            String category, 
+            Double minPrice, 
+            Double maxPrice, 
+            Pageable pageable) {
+
+        Query query = new Query();
+
+        //  Filter by keyword in name or description
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String cleanKw = keyword.trim();
+            Criteria nameMatch = Criteria.where("name").regex(cleanKw, "i");
+            Criteria descMatch = Criteria.where("description").regex(cleanKw, "i");
+            query.addCriteria(new Criteria().orOperator(nameMatch, descMatch));
+        }
+
+        //  Filter by category
+        if (category != null && !category.trim().isEmpty() && !"ALL".equalsIgnoreCase(category)) {
+            query.addCriteria(Criteria.where("category").is(category.trim()));
+        }
+
+        //  Filter by price range
+        if (minPrice != null && maxPrice != null) {
+            query.addCriteria(Criteria.where("price").gte(minPrice).lte(maxPrice));
+        } else if (minPrice != null) {
+            query.addCriteria(Criteria.where("price").gte(minPrice));
+        } else if (maxPrice != null) {
+            query.addCriteria(Criteria.where("price").lte(maxPrice));
+        }
+
+        // Get total elements for pagination count
+        long total = mongoTemplate.count(query, Product.class);
+
+        // Apply page size and page number limits
+        query.with(pageable);
+
+        List<Product> products = mongoTemplate.find(query, Product.class);
+
+        return new PageImpl<>(products, pageable, total);
+    }
+
 
     public Product createProduct(
             String name,
