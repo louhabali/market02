@@ -168,6 +168,29 @@ class ProductServiceTest {
         }
 
         @Test
+        void shouldDecreaseStockWhenOrderIsConfirmed() {
+                when(repository.findById("1")).thenReturn(Optional.of(product));
+                when(repository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+                Product updated = service.decrementStock("1", 2);
+
+                assertThat(updated.getQuantity()).isEqualTo(3);
+                verify(repository).save(any(Product.class));
+        }
+
+        @Test
+        void shouldRejectStockReductionWhenInsufficientQuantity() {
+                when(repository.findById("1")).thenReturn(Optional.of(product));
+
+                ResponseStatusException exception = assertThrows(
+                                ResponseStatusException.class,
+                                () -> service.decrementStock("1", 6));
+
+                assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                assertThat(exception.getReason()).contains("Only 5 item");
+        }
+
+        @Test
         void shouldDeleteProduct() {
                 when(repository.findById("1")).thenReturn(Optional.of(product));
 

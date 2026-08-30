@@ -47,6 +47,28 @@ public class ProductService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
     }
 
+    public int getAvailableQuantity(String id) {
+        Product product = getProduct(id);
+        return product.getQuantity() == null ? 0 : product.getQuantity();
+    }
+
+    public Product decrementStock(String productId, Integer quantity) {
+        if (quantity == null || quantity <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order quantity must be greater than zero.");
+        }
+
+        Product product = getProduct(productId);
+        int available = product.getQuantity() == null ? 0 : product.getQuantity();
+
+        if (quantity > available) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only " + available + " item(s) available in stock for this product.");
+        }
+
+        product.setQuantity(available - quantity);
+        return repository.save(product);
+    }
+
     
     // Search and filter products with pagination
     public Page<Product> searchProducts(

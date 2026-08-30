@@ -1,13 +1,13 @@
 package buy01.cart_service;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 class CartServiceApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
-
+    @Test
+    void applicationClassCanBeLoaded() {
+        assertDoesNotThrow(CartServiceApplication::new);
+    }
 }

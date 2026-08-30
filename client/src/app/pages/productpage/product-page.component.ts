@@ -131,7 +131,9 @@ export class ProductPageComponent implements OnInit {
       },
       error: (err) => {
         this.isAddingToCart = false;
-        this.error = err?.error?.errorMessage ?? 'Failed to add item to cart';
+        const message = err?.error?.message || err?.error?.errorMessage || 'Failed to add item to cart';
+        this.error = message;
+        //alert(message);
       }
     });
   }

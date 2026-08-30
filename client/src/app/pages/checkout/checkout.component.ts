@@ -18,6 +18,7 @@ export class CheckoutComponent {
   router = inject(Router);
 
   isSubmitting = false;
+  orderErrorMessage: string | null = null;
 
   checkoutForm = this.fb.group({
     fullName: ['', Validators.required],
@@ -44,15 +45,17 @@ export class CheckoutComponent {
       shippingAddress: this.checkoutForm.value as any
     };
 
+    this.orderErrorMessage = null;
+
     this.orderService.createOrder(request).subscribe({
-      next: (order) => {
+      next: () => {
         this.isSubmitting = false;
         this.cartService.clearCart().subscribe();
         this.router.navigate(['/profile']);
       },
-      error: () => {
+      error: (err) => {
         this.isSubmitting = false;
-        alert('Failed to place order. Please try again.');
+        this.orderErrorMessage = err?.error?.message || 'Failed to place order. Please try again.';
       }
     });
   }

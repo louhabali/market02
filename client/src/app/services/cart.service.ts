@@ -1,7 +1,17 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { ShoppingCart, AddToCartRequest } from '../models/cart.model';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { ShoppingCart, AddToCartRequest, CartItem } from '../models/cart.model';
 import { tap, Observable } from 'rxjs';
+
+export interface CartPageResponse {
+  items: CartItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -22,10 +32,22 @@ export class CartService {
     this.cartSignal().items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   );
 
-  loadCart() {
-    return this.http.get<ShoppingCart>(this.apiUrl).pipe(
-      tap(cart => this.cartSignal.set(cart))
-    ).subscribe();
+  getCartPage(page = 0, size = 20): Observable<CartPageResponse> {
+    const params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+    return this.http.get<CartPageResponse>(this.apiUrl, { params }).pipe(
+      tap(cartPage => {
+        const cart: ShoppingCart = {
+          userId: '',
+          items: cartPage.items,
+          totalAmount: cartPage.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+        };
+        this.cartSignal.set(cart);
+      })
+    );
+  }
+
+  loadCart(page = 0, size = 20) {
+    return this.getCartPage(page, size).subscribe();
   }
 
   addToCart(item: AddToCartRequest): Observable<ShoppingCart> {

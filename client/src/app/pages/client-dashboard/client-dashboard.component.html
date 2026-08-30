@@ -1,5 +1,9 @@
 <div class="min-h-screen bg-[#0a1120] p-6 sm:p-10 antialiased font-sans">
   <div class="max-w-6xl mx-auto space-y-8">
+    <div *ngIf="uiMessage" [ngClass]="uiMessageType === 'error' ? 'bg-red-950/80 border-red-800 text-red-400' : 'bg-emerald-950/90 border-emerald-600 text-emerald-300'" class="w-full border p-4 rounded-xl font-mono text-xs uppercase shadow-sm flex items-center justify-between">
+      <span class="break-words max-w-full">{{ uiMessage }}</span>
+      <button type="button" (click)="dismissUiMessage()" [ngClass]="uiMessageType === 'error' ? 'text-red-400 hover:text-white' : 'text-emerald-300 hover:text-white'" class="ml-4 font-bold">✕</button>
+    </div>
     
     <!-- Top Header -->
     <div class="flex justify-between items-center border-b border-white/10 pb-6">
@@ -141,6 +145,20 @@
             <p class="mt-1" *ngIf="!order.shippingAddress">Not specified</p>
           </div>
         </div>
+      </div>
+
+      <div *ngIf="orderTotalPages > 1" class="flex items-center justify-between border-t border-gray-200 pt-5">
+        <button type="button" (click)="previousOrdersPage()" [disabled]="orderPage === 0"
+          class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50">
+          Previous
+        </button>
+        <span class="text-xs font-mono uppercase tracking-wider text-gray-500">
+          Page {{ orderPage + 1 }} / {{ orderTotalPages }}
+        </span>
+        <button type="button" (click)="nextOrdersPage()" [disabled]="orderPage >= orderTotalPages - 1"
+          class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50">
+          Next
+        </button>
       </div>
     </div>
 

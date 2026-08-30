@@ -132,7 +132,7 @@ export class AddProductComponent {
     } else if (this.price < 0.01) {
       errors.push('Price must be at least 0.01 DH.');
     } else if (this.price > 9999999.99) {
-      errors.push('Price exceeds maximum allowed value (9,999,999.99 DH).');
+      errors.push('Price exceeds maximum allowed value (9,999,999.99 $).');
     }
 
     if (this.quantity === null || this.quantity === undefined || isNaN(this.quantity)) {

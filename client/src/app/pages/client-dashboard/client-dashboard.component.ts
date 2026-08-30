@@ -30,6 +30,11 @@ export class ClientDashboardComponent implements OnInit {
   filteredOrders: Order[] = [];
   searchQuery = '';
   statusFilter = 'ALL';
+  orderPage = 0;
+  orderPageSize = 20;
+  orderTotalPages = 1;
+  uiMessage: string | null = null;
+  uiMessageType: 'error' | 'success' = 'error';
 
   analytics: ClientAnalytics = {
     totalSpent: 0,
@@ -45,9 +50,10 @@ export class ClientDashboardComponent implements OnInit {
 
   fetchOrders(): void {
     this.loading = true;
-    this.orderService.getMyOrders().subscribe({
+    this.orderService.getMyOrders(this.orderPage, this.orderPageSize).subscribe({
       next: (data) => {
-        this.orders = data || [];
+        this.orders = data.content || [];
+        this.orderTotalPages = data.totalPages > 0 ? data.totalPages : 1;
         this.updateAnalytics();
         this.filterOrders();
         this.loading = false;
@@ -110,8 +116,15 @@ export class ClientDashboardComponent implements OnInit {
   cancelOrder(orderId: string): void {
     if (!confirm('Are you sure you want to cancel this order?')) return;
     this.orderService.cancelOrder(orderId).subscribe({
-      next: () => this.fetchOrders(),
-      error: (err) => alert(err?.error?.message || 'Could not cancel order')
+      next: () => {
+        this.uiMessageType = 'success';
+        this.uiMessage = 'Order cancelled successfully.';
+        this.fetchOrders();
+      },
+      error: (err) => {
+        this.uiMessageType = 'error';
+        this.uiMessage = err?.error?.message || 'Could not cancel order';
+      }
     });
   }
 
@@ -124,8 +137,34 @@ export class ClientDashboardComponent implements OnInit {
         category: item.category,
         price: item.priceAtPurchase,
         quantity: item.quantity
-      }).subscribe();
+      }).subscribe({
+        next: () => {
+          this.uiMessageType = 'success';
+          this.uiMessage = 'Items re-added to your cart!';
+        },
+        error: (err) => {
+          this.uiMessageType = 'error';
+          this.uiMessage = err?.error?.message || 'Unable to re-add one or more items to the cart.';
+        }
+      });
     });
-    alert('Items re-added to your cart!');
+  }
+
+  previousOrdersPage(): void {
+    if (this.orderPage > 0) {
+      this.orderPage -= 1;
+      this.fetchOrders();
+    }
+  }
+
+  nextOrdersPage(): void {
+    if (this.orderPage < this.orderTotalPages - 1) {
+      this.orderPage += 1;
+      this.fetchOrders();
+    }
+  }
+
+  dismissUiMessage(): void {
+    this.uiMessage = null;
   }
 }

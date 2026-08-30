@@ -31,6 +31,17 @@ public class ProductController {
     public Product getProduct(@PathVariable String id) {
         return productService.getProduct(id);
     }
+
+    @GetMapping("/{id}/available-stock")
+    public Integer getAvailableQuantity(@PathVariable String id) {
+        return productService.getAvailableQuantity(id);
+    }
+
+    @PostMapping("/{id}/decrement-stock")
+    public Product decrementStock(@PathVariable String id, @RequestParam Integer quantity) {
+        return productService.decrementStock(id, quantity);
+    }
+
     @GetMapping("/search")
     public Page<Product> searchProducts(
             @RequestParam(required = false) String keyword,

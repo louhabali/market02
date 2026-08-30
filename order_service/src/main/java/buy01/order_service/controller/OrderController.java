@@ -1,10 +1,12 @@
 package buy01.order_service.controller;
 
 import buy01.order_service.dto.CreateOrderRequest;
+import buy01.order_service.dto.CustomerInsightsResponse;
 import buy01.order_service.dto.SellerAnalyticsResponse;
 import buy01.order_service.dto.UpdateOrderStatusRequest;
 import buy01.order_service.model.Order;
 import buy01.order_service.service.OrderService;
+import org.springframework.data.domain.Page;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -34,13 +36,24 @@ public class OrderController {
     }
 
     @GetMapping("/my-orders")
-    public ResponseEntity<List<Order>> getCustomerOrders(@RequestHeader("X-User-Id") String customerId) {
-        return ResponseEntity.ok(orderService.getCustomerOrders(customerId));
+    public ResponseEntity<Page<Order>> getCustomerOrders(
+            @RequestHeader("X-User-Id") String customerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(orderService.getCustomerOrders(customerId, page, size));
     }
 
     @GetMapping("/seller")
-    public ResponseEntity<List<Order>> getSellerOrders(@RequestHeader("X-User-Id") String sellerId) {
-        return ResponseEntity.ok(orderService.getSellerOrders(sellerId));
+    public ResponseEntity<Page<Order>> getSellerOrders(
+            @RequestHeader("X-User-Id") String sellerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(orderService.getSellerOrders(sellerId, page, size));
+    }
+
+    @GetMapping("/my-insights")
+    public ResponseEntity<CustomerInsightsResponse> getCustomerInsights(@RequestHeader("X-User-Id") String customerId) {
+        return ResponseEntity.ok(orderService.getCustomerInsights(customerId));
     }
 
     @GetMapping("/seller/analytics")

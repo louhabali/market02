@@ -178,19 +178,19 @@
                             <!-- Total Spent Badge -->
                             <div class="bg-[#001830]/5 border border-[#001830]/10 p-4 rounded-xl">
                                 <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Spent</span>
-                                <span class="text-lg font-black text-[#001830]">$450.00</span>
+                                <span class="text-lg font-black text-[#001830]">{{ shoppingInsights.totalSpent | currency:'USD':'symbol':'1.2-2' }}</span>
                             </div>
 
                             <!-- Top Category Badge -->
                             <div class="bg-[#001830]/5 border border-[#001830]/10 p-4 rounded-xl">
                                 <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Top Category</span>
-                                <span class="text-sm font-bold text-[#001830]">Outerwear</span>
+                                <span class="text-sm font-bold text-[#001830]">{{ shoppingInsights.topCategory }}</span>
                             </div>
 
                             <!-- Orders Placed Badge -->
                             <div class="bg-[#001830]/5 border border-[#001830]/10 p-4 rounded-xl">
                                 <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Orders Placed</span>
-                                <span class="text-lg font-black text-[#001830]">8</span>
+                                <span class="text-lg font-black text-[#001830]">{{ shoppingInsights.totalOrders }}</span>
                             </div>
                         </div>
                     </div>

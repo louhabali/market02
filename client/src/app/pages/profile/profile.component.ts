@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { AuthService, ProfileResponse } from '../../services/auth.service';
 import { MediaService } from '../../services/media.service';
 import { UserService } from '../../services/user.service';
+import { CustomerInsightsResponse, OrderService } from '../../services/order.service';
 
 @Component({
   selector: 'app-profile',
@@ -17,6 +18,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   private fb = inject(NonNullableFormBuilder);
   private authService = inject(AuthService);
   private mediaService = inject(MediaService);
+  private orderService = inject(OrderService);
   private us = inject(UserService);
   private router = inject(Router);
 
@@ -35,6 +37,11 @@ export class ProfileComponent implements OnInit, OnDestroy {
   editing = false;
   selectedAvatar: File | null = null;
   avatarPreview = '';
+  shoppingInsights: CustomerInsightsResponse = {
+    totalSpent: 0,
+    totalOrders: 0,
+    topCategory: 'N/A'
+  };
 
   ngOnInit(): void {
     this.userSub = this.us.user$.subscribe((data) => {
@@ -67,14 +74,35 @@ export class ProfileComponent implements OnInit, OnDestroy {
           role: data.role ? data.role.replace('ROLE_', '') : 'CLIENT'
         };
 
-        // Broadcast profile state so Navbar and RoleGuard stay synchronized
+        this.user = normalizedUser;
         this.us.setUser(normalizedUser);
         this.loading = false;
+        this.loadShoppingInsights();
       },
       error: (err) => {
         console.error('Cannot load profile:', err);
         this.error = 'Cannot load profile';
         this.loading = false;
+      }
+    });
+  }
+
+  private loadShoppingInsights(): void {
+    if (!this.user || this.user.role !== 'CLIENT') {
+      this.shoppingInsights = { totalSpent: 0, totalOrders: 0, topCategory: 'N/A' };
+      return;
+    }
+
+    this.orderService.getMyInsights().subscribe({
+      next: (insights) => {
+        this.shoppingInsights = {
+          totalSpent: Number(insights?.totalSpent ?? 0),
+          totalOrders: Number(insights?.totalOrders ?? 0),
+          topCategory: insights?.topCategory || 'N/A'
+        };
+      },
+      error: () => {
+        this.shoppingInsights = { totalSpent: 0, totalOrders: 0, topCategory: 'N/A' };
       }
     });
   }

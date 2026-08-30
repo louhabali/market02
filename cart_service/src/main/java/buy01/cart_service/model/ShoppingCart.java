@@ -15,7 +15,9 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@RedisHash(value = "shopping_cart", timeToLive = 604800) // 7 days TTL
+// @RedisHash(value = "shopping_cart", timeToLive = 604800) // 7 days TTL
+// @RedisHash(value = "shopping_cart", timeToLive = 691200) // 8 days
+@RedisHash(value = "shopping_cart")
 public class ShoppingCart {
 
     @Id
@@ -28,6 +30,7 @@ public class ShoppingCart {
         if (items == null || items.isEmpty()) {
             return BigDecimal.ZERO;
         }
+
         return items.stream()
                 .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
