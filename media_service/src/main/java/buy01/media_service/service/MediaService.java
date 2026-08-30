@@ -11,7 +11,7 @@ import java.util.List;
 
 @Service
 public class MediaService {
-
+    //
     private static final Path UPLOAD_DIR = Paths.get("/app/uploads").toAbsolutePath().normalize();
     private static final long MAX_SIZE = 2L * 1024L * 1024L; // 2 MB
     private static final List<String> ALLOWED_MIME_TYPES = List.of("image/jpeg", "image/png", "image/webp","image/gif","image/x-avif","image/avif");
