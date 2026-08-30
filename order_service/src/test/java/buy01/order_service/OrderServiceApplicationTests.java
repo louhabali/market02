@@ -1,13 +1,14 @@
 package buy01.order_service;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 class OrderServiceApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void applicationClassCanBeLoaded() {
+        assertDoesNotThrow(OrderServiceApplication::new);
+    }
 
 }

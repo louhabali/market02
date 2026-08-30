@@ -11,12 +11,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,8 +68,7 @@ class OrderServiceAnalyticsTest {
                                 .updatedAt(Instant.now())
                                 .build();
 
-                when(orderRepository.findByCustomerIdOrderByCreatedAtDesc("user-123",
-                                org.mockito.ArgumentMatchers.any()))
+                when(orderRepository.findByCustomerIdOrderByCreatedAtDesc(eq("user-123"), any(Pageable.class)))
                                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(order1, order2)));
                 CustomerInsightsResponse insights = orderService.getCustomerInsights("user-123");
 
