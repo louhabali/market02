@@ -15,7 +15,8 @@ pipeline {
         EMAIL2          = 'ismailichi29@gmail.com'
         EMAIL3          = 'xxx@gmail.com'
         SONAR_HOST_URL  = 'http://sonarqube:9000'
-        JAVA_SERVICES   = 'gateway_service user_service product_service media_service cart_service order_service'
+        JAVA_SERVICES   = 'gateway_service user_service product_service media_service cart_service'
+        // JAVA_SERVICES   = 'gateway_service user_service product_service media_service cart_service order_service'
         FRONTEND_PORT   = '8088'
         GATEWAY_PORT    = '8089'
     }
