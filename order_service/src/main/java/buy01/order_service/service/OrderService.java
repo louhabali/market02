@@ -2,7 +2,9 @@ package buy01.order_service.service;
 
 import buy01.order_service.dto.CreateOrderRequest;
 import buy01.order_service.dto.CustomerInsightsResponse;
+import buy01.order_service.dto.OrderItemDto;
 import buy01.order_service.dto.SellerAnalyticsResponse;
+import buy01.order_service.dto.ShippingAddressDto;
 import buy01.order_service.event.OrderCreatedEvent;
 import buy01.order_service.event.OrderEventPublisher;
 import buy01.order_service.exception.OrderNotFoundException;
@@ -34,45 +36,11 @@ public class OrderService {
     private final ProductInventoryClient productInventoryClient;
 
     public Order createOrder(String customerId, CreateOrderRequest request) {
-        for (OrderItem item : request.getItems().stream()
-                .map(dto -> OrderItem.builder()
-                        .productId(dto.getProductId())
-                        .sellerId(dto.getSellerId())
-                        .productName(dto.getProductName())
-                        .category(dto.getCategory())
-                        .priceAtPurchase(dto.getPrice())
-                        .quantity(dto.getQuantity())
-                        .build())
-                .toList()) {
-            int available = productInventoryClient.getAvailableQuantity(item.getProductId());
-            if (item.getQuantity() > available) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Only " + available + " item(s) available in stock for product " + item.getProductId());
-            }
-        }
+        List<OrderItem> orderItems = toOrderItems(request);
+        validateStockAvailability(orderItems);
 
-        List<OrderItem> orderItems = request.getItems().stream()
-                .map(dto -> OrderItem.builder()
-                        .productId(dto.getProductId())
-                        .sellerId(dto.getSellerId())
-                        .productName(dto.getProductName())
-                        .category(dto.getCategory())
-                        .priceAtPurchase(dto.getPrice())
-                        .quantity(dto.getQuantity())
-                        .build())
-                .toList();
-
-        BigDecimal totalAmount = orderItems.stream()
-                .map(item -> item.getPriceAtPurchase().multiply(BigDecimal.valueOf(item.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        ShippingAddress address = ShippingAddress.builder()
-                .fullName(request.getShippingAddress().getFullName())
-                .phone(request.getShippingAddress().getPhone())
-                .streetAddress(request.getShippingAddress().getStreetAddress())
-                .city(request.getShippingAddress().getCity())
-                .postalCode(request.getShippingAddress().getPostalCode())
-                .build();
+        BigDecimal totalAmount = calculateTotalAmount(orderItems);
+        ShippingAddress address = mapAddress(request.getShippingAddress());
 
         Order order = Order.builder()
                 .customerId(customerId)
@@ -86,20 +54,68 @@ public class OrderService {
                 .build();
 
         Order savedOrder = orderRepository.save(order);
+        decreaseInventory(savedOrder.getItems());
+        publishOrderCreatedEvent(customerId, savedOrder.getId(), totalAmount);
+        return savedOrder;
+    }
 
-        for (OrderItem item : savedOrder.getItems()) {
+    private List<OrderItem> toOrderItems(CreateOrderRequest request) {
+        return request.getItems().stream()
+                .map(this::toOrderItem)
+                .toList();
+    }
+
+    private OrderItem toOrderItem(OrderItemDto dto) {
+        return OrderItem.builder()
+                .productId(dto.getProductId())
+                .sellerId(dto.getSellerId())
+                .productName(dto.getProductName())
+                .category(dto.getCategory())
+                .priceAtPurchase(dto.getPrice())
+                .quantity(dto.getQuantity())
+                .build();
+    }
+
+    private void validateStockAvailability(List<OrderItem> items) {
+        for (OrderItem item : items) {
+            int available = productInventoryClient.getAvailableQuantity(item.getProductId());
+            if (item.getQuantity() > available) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Only " + available + " item(s) available in stock for product " + item.getProductId());
+            }
+        }
+    }
+
+    private BigDecimal calculateTotalAmount(List<OrderItem> items) {
+        return items.stream()
+                .map(item -> item.getPriceAtPurchase().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private ShippingAddress mapAddress(ShippingAddressDto shippingAddress) {
+        return ShippingAddress.builder()
+                .fullName(shippingAddress.getFullName())
+                .phone(shippingAddress.getPhone())
+                .streetAddress(shippingAddress.getStreetAddress())
+                .city(shippingAddress.getCity())
+                .postalCode(shippingAddress.getPostalCode())
+                .build();
+    }
+
+    private void decreaseInventory(List<OrderItem> items) {
+        for (OrderItem item : items) {
             productInventoryClient.decrementStock(item.getProductId(), item.getQuantity());
         }
+    }
 
+    private void publishOrderCreatedEvent(String customerId, String orderId, BigDecimal totalAmount) {
         orderEventPublisher.publishOrderCreated(
                 OrderCreatedEvent.builder()
-                        .orderId(savedOrder.getId())
+                        .orderId(orderId)
                         .customerId(customerId)
                         .totalAmount(totalAmount)
                         .build()
         );
-
-        return savedOrder;
     }
 
     public Order getOrderById(String orderId) {

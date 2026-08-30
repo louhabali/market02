@@ -104,30 +104,8 @@ public class CartService {
             String userId,
             AddToCartRequest request) {
 
-
-        if (userId == null || userId.isBlank()) {
-            throw new IllegalArgumentException("userId cannot be null or empty");
-        }
-
-        if (request == null) {
-            throw new IllegalArgumentException("AddToCartRequest cannot be null");
-        }
-
-        if (request.getProductId() == null || request.getProductId().isBlank()) {
-
-            throw new IllegalArgumentException("productId cannot be null or empty");
-        }
-
-        if (request.getQuantity() <= 0) {
-            throw new IllegalArgumentException( "quantity must be greater than zero");
-        }
-
-        int availableStock;
-        try {
-            availableStock = productStockClient.getAvailableQuantity(request.getProductId());
-        } catch (RuntimeException ex) {
-            throw new IllegalArgumentException("Unable to verify stock for this product right now. Please try again.", ex);
-        }
+        validateAddItemRequest(userId, request);
+        int availableStock = getAvailableStock(request.getProductId());
 
         int currentCartQuantity = getItemQuantity(userId, request.getProductId());
         int requestedTotal = currentCartQuantity + request.getQuantity();
@@ -136,13 +114,7 @@ public class CartService {
                     "Only " + availableStock + " item(s) available in stock for this product.");
         }
 
-        ShoppingCart redisCart = cartRepository.findById(userId)
-                        .orElseGet(() ->
-                                ShoppingCart.builder()
-                                        .userId(userId)
-                                        .items(new ArrayList<>())
-                                        .build()
-                        );
+        ShoppingCart redisCart = getOrCreateRedisCart(userId);
 
         if (redisCart.getItems() == null) {
             redisCart.setItems(new ArrayList<>());
@@ -250,6 +222,37 @@ public class CartService {
         );
 
         return getCart(userId);
+    }
+
+    private void validateAddItemRequest(String userId, AddToCartRequest request) {
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("userId cannot be null or empty");
+        }
+        if (request == null) {
+            throw new IllegalArgumentException("AddToCartRequest cannot be null");
+        }
+        if (request.getProductId() == null || request.getProductId().isBlank()) {
+            throw new IllegalArgumentException("productId cannot be null or empty");
+        }
+        if (request.getQuantity() <= 0) {
+            throw new IllegalArgumentException("quantity must be greater than zero");
+        }
+    }
+
+    private int getAvailableStock(String productId) {
+        try {
+            return productStockClient.getAvailableQuantity(productId);
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("Unable to verify stock for this product right now. Please try again.", ex);
+        }
+    }
+
+    private ShoppingCart getOrCreateRedisCart(String userId) {
+        return cartRepository.findById(userId)
+                .orElseGet(() -> ShoppingCart.builder()
+                        .userId(userId)
+                        .items(new ArrayList<>())
+                        .build());
     }
 
     // REMOVE ITEM
