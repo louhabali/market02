@@ -5,14 +5,12 @@ WORKDIR /app
 # Copy POM first to resolve and cache dependencies
 COPY pom.xml .
 
-# Pre-download dependencies into a shared local BuildKit cache
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn dependency:go-offline -B
+# Pre-download dependencies in the standard local Maven cache
+RUN mvn dependency:go-offline -B
 
-# Copy source code and build using the shared cache
+# Copy source code and build the application
 COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn clean package -DskipTests -Dmaven.test.skip=true
+RUN mvn clean package -DskipTests -Dmaven.test.skip=true
 
 # Stage 2: Run the JAR
 FROM eclipse-temurin:21-jre-alpine
