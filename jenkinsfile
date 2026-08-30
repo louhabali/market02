@@ -119,12 +119,13 @@ pipeline {
         }
 
         stage('Build Artifacts & Container Images') {
-            steps {
-                echo 'Building production JAR files concurrently...'
-                environment {
+            environment {
                     DOCKER_BUILDKIT = '1'
                     COMPOSE_DOCKER_CLI_BUILD = '1'
-                }
+            }
+            steps {
+                echo 'Building production JAR files concurrently...'
+
                 sh '''
                     set -e
                     for dir in ${JAVA_SERVICES}; do
