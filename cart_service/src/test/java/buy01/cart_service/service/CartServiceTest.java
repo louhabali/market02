@@ -17,10 +17,12 @@ import org.springframework.data.redis.core.SetOperations;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -225,6 +227,123 @@ class CartServiceTest {
         verify(cartRepository).deleteById(USER_ID);
         verify(cartMongoRepository).deleteById(USER_ID);
         verify(setOperations).remove(ACTIVE_CARTS_KEY, USER_ID);
+    }
+
+    @Test
+    void shouldReturnPaginatedCartView() {
+        ShoppingCart redisCart = ShoppingCart.builder()
+                .userId(USER_ID)
+                .items(new ArrayList<>(List.of(
+                        item("p-1", 1, new BigDecimal("10.00")),
+                        item("p-2", 2, new BigDecimal("20.00")),
+                        item("p-3", 3, new BigDecimal("30.00"))
+                )))
+                .build();
+
+        when(cartRepository.findById(USER_ID)).thenReturn(Optional.of(redisCart));
+        when(cartMongoRepository.findById(USER_ID)).thenReturn(Optional.empty());
+
+        var result = cartService.getCartPage(USER_ID, 1, 2);
+
+        assertThat(result.getItems()).hasSize(1);
+        assertThat(result.getPage()).isEqualTo(1);
+        assertThat(result.getTotalPages()).isEqualTo(2);
+        assertThat(result.isLast()).isTrue();
+    }
+
+    @Test
+    void shouldIncreaseMongoQuantityWhenProductAlreadyExistsThere() {
+        ShoppingCartDocument mongoCart = ShoppingCartDocument.builder()
+                .userId(USER_ID)
+                .items(new ArrayList<>(List.of(
+                        item("p-1", 1, new BigDecimal("10.00"))
+                )))
+                .build();
+
+        AddToCartRequest request = AddToCartRequest.builder()
+                .productId("p-1")
+                .sellerId("seller-1")
+                .productName("Product p-1")
+                .imageUrl("https://example.com/p-1.png")
+                .price(new BigDecimal("10.00"))
+                .quantity(2)
+                .build();
+
+        when(cartRepository.findById(USER_ID)).thenReturn(Optional.empty());
+        when(cartMongoRepository.findById(USER_ID)).thenReturn(Optional.of(mongoCart));
+        when(productStockClient.getAvailableQuantity("p-1")).thenReturn(10);
+
+        ShoppingCart result = cartService.addItemToCart(USER_ID, request);
+
+        assertThat(result.getItems()).hasSize(1);
+        assertThat(result.getItems().get(0).getQuantity()).isEqualTo(3);
+        verify(cartMongoRepository).save(mongoCart);
+    }
+
+    @Test
+    void shouldBackupOldRedisItemsToMongoAndKeepRecentOnes() {
+        ShoppingCart redisCart = ShoppingCart.builder()
+                .userId(USER_ID)
+                .items(new ArrayList<>(List.of(
+                        item("old-1", 1, new BigDecimal("12.00")),
+                        item("new-1", 2, new BigDecimal("17.00"))
+                )))
+                .build();
+        redisCart.getItems().get(0).setAddedAt(1_000L);
+        redisCart.getItems().get(1).setAddedAt(Instant.now().getEpochSecond());
+
+        ShoppingCartDocument mongoCart = ShoppingCartDocument.builder()
+                .userId(USER_ID)
+                .items(new ArrayList<>())
+                .build();
+
+        when(redisTemplate.opsForSet().members(ACTIVE_CARTS_KEY)).thenReturn(Set.of(USER_ID));
+        when(cartRepository.findById(USER_ID)).thenReturn(Optional.of(redisCart));
+        when(cartMongoRepository.findById(USER_ID)).thenReturn(Optional.of(mongoCart));
+
+        cartService.backupOldCartItemsToMongoDB();
+
+        assertThat(mongoCart.getItems()).hasSize(1);
+        assertThat(redisCart.getItems()).hasSize(1);
+        verify(cartMongoRepository).save(mongoCart);
+    }
+
+    @Test
+    void shouldUpdateItemQuantityWhenStockAllows() {
+        ShoppingCart redisCart = ShoppingCart.builder()
+                .userId(USER_ID)
+                .items(new ArrayList<>(List.of(
+                        item("p-1", 1, new BigDecimal("10.00"))
+                )))
+                .build();
+
+        when(cartRepository.findById(USER_ID)).thenReturn(Optional.of(redisCart));
+        when(cartMongoRepository.findById(USER_ID)).thenReturn(Optional.empty());
+        when(productStockClient.getAvailableQuantity("p-1")).thenReturn(5);
+
+        ShoppingCart result = cartService.updateItemQuantity(USER_ID, new UpdateQuantityRequest("p-1", 3));
+
+        assertThat(result.getItems().get(0).getQuantity()).isEqualTo(3);
+        verify(cartRepository).save(redisCart);
+    }
+
+    @Test
+    void shouldRejectQuantityUpdateWhenStockIsInsufficient() {
+        ShoppingCart redisCart = ShoppingCart.builder()
+                .userId(USER_ID)
+                .items(new ArrayList<>(List.of(
+                        item("p-1", 1, new BigDecimal("10.00"))
+                )))
+                .build();
+
+        when(cartRepository.findById(USER_ID)).thenReturn(Optional.of(redisCart));
+        when(cartMongoRepository.findById(USER_ID)).thenReturn(Optional.empty());
+        when(productStockClient.getAvailableQuantity("p-1")).thenReturn(2);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> cartService.updateItemQuantity(USER_ID, new UpdateQuantityRequest("p-1", 3)));
+
+        assertThat(ex.getMessage()).contains("Only 2 item");
     }
 
     private CartItem item(String productId, int quantity, BigDecimal price) {
