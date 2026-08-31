@@ -147,42 +147,53 @@ pipeline {
                 sh '''
                     set -e
                     echo "Bringing the application stack up for E2E testing..."
-                    ${COMPOSE} up -d --build --remove-orphans
+                    ${COMPOSE} up -d --remove-orphans
                     ${COMPOSE} ps
                 '''
             }
         }
 
         stage('E2E readiness smoke check') {
-            // up the compose stack and wait for the frontend and gateway to be reachable before running E2E tests
+            // Start the compose stack and wait for frontend + gateway
+            // to become reachable before running browser E2E tests.
             steps {
-                echo "Runninhg the services stack to ${DEPLOY_DIR}..."
-                sh '''
-                    mkdir -p ${DEPLOY_DIR}
-                    cp docker-compose.yml ${DEPLOY_DIR}/
-                    cp .env ${DEPLOY_DIR}/.env
+                echo "Running the services stack from ${DEPLOY_DIR}..."
 
-                    cd ${DEPLOY_DIR}
-                    ${COMPOSE} up -d --remove-orphans
-                    ${COMPOSE} ps
-                '''
-            }
-            steps {
                 sh '''
-                    set -e
-                    echo "Waiting for the app to become reachable for E2E tests..."
-                    for i in $(seq 1 40); do
-                        if curl -k -fsS -I "${E2E_BASE_URL}" >/dev/null 2>&1 && \
-                           curl -k -fsS -I "https://localhost:${GATEWAY_PORT}" >/dev/null 2>&1; then
-                            echo "Frontend and gateway are reachable. E2E environment is ready."
-                            exit 0
-                        fi
-                        sleep 5
-                    done
-                    echo "Timed out waiting for frontend/gateway to respond."
-                    exit 1
-                '''
+        set -e
+
+        mkdir -p "${DEPLOY_DIR}"
+
+        cp docker-compose.yml "${DEPLOY_DIR}/"
+        cp .env "${DEPLOY_DIR}/.env"
+
+        cd "${DEPLOY_DIR}"
+
+        ${COMPOSE} up -d --remove-orphans
+        ${COMPOSE} ps
+
+        echo "Waiting for the app to become reachable for E2E tests..."
+
+
+            if curl -k -fsS -I "${E2E_BASE_URL}" >/dev/null 2>&1 && \
+               curl -k -fsS -I "https://localhost:${GATEWAY_PORT}" >/dev/null 2>&1; then
+
+                echo "Frontend and gateway are reachable."
+                echo "E2E environment is ready."
+
+                exit 0
+            fi
+            sleep 5
+
+        echo "Timed out waiting for frontend/gateway to respond."
+
+        echo "Final Docker Compose status:"
+        ${COMPOSE} ps
+
+        exit 1
+    '''
             }
+
         }
 
         stage('Browser E2E tests') {
