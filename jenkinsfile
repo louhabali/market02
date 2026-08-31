@@ -208,9 +208,9 @@ pipeline {
             when {
                 allOf {
                     anyOf {
-                        branch 'alouhab'
-                        environment name: 'CHANGE_TARGET', value: 'alouhab'
-                        expression { env.GIT_BRANCH?.endsWith('alouhab') }
+                        branch 'safe-merge-cart-service'
+                        environment name: 'CHANGE_TARGET', value: 'safe-merge-cart-service'
+                        expression { env.GIT_BRANCH?.endsWith('safe-merge-cart-service') }
                     }
 
                     // Never deploy from a scheduled SonarQube scan.
