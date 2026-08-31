@@ -258,7 +258,7 @@ pipeline {
                 sh 'echo "GIT_BRANCH: ${GIT_BRANCH}"'
             }
         }
-
+    //
         stage('Deploy Application') {
             when {
                 allOf {
