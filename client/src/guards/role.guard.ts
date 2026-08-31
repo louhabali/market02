@@ -19,10 +19,10 @@ export const roleGuard: CanActivateFn = (route, state) => {
     return true;
   }
 
-  if (isLoggedIn) {
-    router.navigate(['/forbidden']);
-    return false;
-  }
+  // if (isLoggedIn) {
+  //   router.navigate(['/forbidden']);
+  //   return false;
+  // }
 
   router.navigate(['/login']);
   return false;
