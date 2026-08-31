@@ -228,7 +228,7 @@ pipeline {
                 }
             }
             environment {
-                PLAYWRIGHT_BASE_URL = 'https://frontend:8443'
+                PLAYWRIGHT_BASE_URL = 'https://localhost:8443'
             }
             steps {
                 sh '''
