@@ -10,6 +10,7 @@ pipeline {
     environment {
         APP_NAME        = '01e_com'
         COMPOSE         = 'docker compose -p 01e_com'
+        APP_NETWORK     = '01e_com_default'
         DEPLOY_DIR      = '/opt/01e_com'
         EMAIL           = 'louhabali@gmail.com'
         EMAIL2          = 'ismailichi29@gmail.com'
@@ -19,7 +20,7 @@ pipeline {
         JAVA_SERVICES   = 'gateway_service user_service product_service media_service cart_service order_service'
         FRONTEND_PORT   = '8443'
         GATEWAY_PORT    = '8089'
-        E2E_BASE_URL    = 'https://localhost:8443'
+        E2E_BASE_URL    = 'https://frontend:8443'
     }
 
     triggers {
@@ -177,8 +178,12 @@ pipeline {
         for i in $(seq 1 40); do
             echo "Readiness check ${i}/40..."
 
-            frontend_status=$(curl -k -sS -o /dev/null -w '%{http_code}' --max-time 10 "${E2E_BASE_URL}" || true)
-            gateway_status=$(curl -k -sS -o /dev/null -w '%{http_code}' --max-time 10 "https://localhost:${GATEWAY_PORT}" || true)
+            frontend_status=$(docker run --rm --network "${APP_NETWORK}" \
+                curlimages/curl:8.10.1 -k -sS -o /dev/null -w '%{http_code}' \
+                --max-time 10 "${E2E_BASE_URL}" || true)
+            gateway_status=$(docker run --rm --network "${APP_NETWORK}" \
+                curlimages/curl:8.10.1 -k -sS -o /dev/null -w '%{http_code}' \
+                --max-time 10 "https://gateway:${GATEWAY_PORT}" || true)
 
             echo "Frontend HTTP status: ${frontend_status}"
             echo "Gateway HTTP status: ${gateway_status}"
@@ -218,12 +223,12 @@ pipeline {
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.54.1-jammy'
-                    args '-u root --entrypoint=""'
+                    args '-u root --entrypoint="" --network 01e_com_default'
                     reuseNode true
                 }
             }
             environment {
-                PLAYWRIGHT_BASE_URL = 'https://localhost:8443'
+                PLAYWRIGHT_BASE_URL = 'https://frontend:8443'
             }
             steps {
                 sh '''
