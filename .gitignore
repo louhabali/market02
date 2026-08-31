@@ -1,3 +1,6 @@
 .vscode
 .env
 workflow.json
+client/playwright-report/
+client/test-results/
+client/.playwright/
