@@ -154,6 +154,19 @@ pipeline {
         }
 
         stage('E2E readiness smoke check') {
+            // up the compose stack and wait for the frontend and gateway to be reachable before running E2E tests
+            steps {
+                echo "Runninhg the services stack to ${DEPLOY_DIR}..."
+                sh '''
+                    mkdir -p ${DEPLOY_DIR}
+                    cp docker-compose.yml ${DEPLOY_DIR}/
+                    cp .env ${DEPLOY_DIR}/.env
+
+                    cd ${DEPLOY_DIR}
+                    ${COMPOSE} up -d --remove-orphans
+                    ${COMPOSE} ps
+                '''
+            }
             steps {
                 sh '''
                     set -e
@@ -194,6 +207,12 @@ pipeline {
             post {
                 always {
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'client/playwright-report/**,client/test-results/**', fingerprint: true
+                }
+                failure {
+                    sh '''
+                       ${COMPOSE} down --remove-orphans
+                       echo "E2E tests failed. Stopping the application stack."
+                    '''
                 }
             }
         }
