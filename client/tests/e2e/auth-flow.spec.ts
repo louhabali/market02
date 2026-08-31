@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 
 test('register, login and access the catalog flow', async ({ page }) => {
+
+  page.on('console', msg => {
+    console.log(`[BROWSER ${msg.type()}] ${msg.text()}`);
+  });
+
   const uniqueId = `${Date.now()}`;
   const username = `e2e${uniqueId}`;
   const email = `e2e${uniqueId}@example.com`;
@@ -14,7 +19,20 @@ test('register, login and access the catalog flow', async ({ page }) => {
   await page.locator('input[formcontrolname="password"]').fill(password);
   await page.locator('select[formcontrolname="role"]').selectOption('CLIENT');
 
+  //check the JWT id it's causing the test to fail
+  console.log('token before registration:', await page.evaluate(() =>
+    localStorage.getItem('token')
+  ));
+
   await page.getByRole('button', { name: 'Complete Registration' }).click();
+  // await page.getByRole('button', { name: 'Complete Registration' }).click();
+
+  console.log('URL after registration:', page.url());
+
+  console.log('token after registration:', await page.evaluate(() =>
+    localStorage.getItem('token')
+  ));
+
 
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole('heading', { name: 'Account Login' })).toBeVisible();
