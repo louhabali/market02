@@ -177,9 +177,23 @@ pipeline {
         for i in $(seq 1 40); do
             echo "Readiness check ${i}/40..."
 
-            if curl -k -fsS -I "${E2E_BASE_URL}" >/dev/null 2>&1 && \
-               curl -k -fsS -I "https://localhost:${GATEWAY_PORT}" >/dev/null 2>&1; then
+            frontend_status=$(curl -k -sS -o /dev/null -w '%{http_code}' --max-time 10 "${E2E_BASE_URL}" || true)
+            gateway_status=$(curl -k -sS -o /dev/null -w '%{http_code}' --max-time 10 "https://localhost:${GATEWAY_PORT}" || true)
 
+            echo "Frontend HTTP status: ${frontend_status}"
+            echo "Gateway HTTP status: ${gateway_status}"
+
+            case "${frontend_status}" in
+                2*) frontend_ready=true ;;
+                *) frontend_ready=false ;;
+            esac
+
+            case "${gateway_status}" in
+                2*|3*|4*) gateway_ready=true ;;
+                *) gateway_ready=false ;;
+            esac
+
+            if [ "${frontend_ready}" = true ] && [ "${gateway_ready}" = true ]; then
                 echo "Frontend and gateway are reachable."
                 echo "E2E environment is ready."
 
