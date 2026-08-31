@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('register, login and access the catalog flow', async ({ page }) => {
+  console.log('========== E2E VERSION 123 ==========');
 
   page.on('console', msg => {
     console.log(`[BROWSER ${msg.type()}] ${msg.text()}`);
@@ -11,7 +12,17 @@ test('register, login and access the catalog flow', async ({ page }) => {
   const email = `e2e${uniqueId}@example.com`;
   const password = 'Pass1234';
 
+
   await page.goto('/register');
+
+  console.log('URL after goto:', page.url());
+
+  console.log(
+    'TOKEN BEFORE:',
+    await page.evaluate(() => localStorage.getItem('token'))
+  );
+
+  // await page.goto('/register');
   await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible();
 
   await page.locator('input[formcontrolname="username"]').fill(username);
@@ -23,8 +34,17 @@ test('register, login and access the catalog flow', async ({ page }) => {
   console.log('token before registration:', await page.evaluate(() =>
     localStorage.getItem('token')
   ));
+  await page.getByRole('button', {
+    name: 'Complete Registration'
+  }).click();
 
-  await page.getByRole('button', { name: 'Complete Registration' }).click();
+  console.log('URL AFTER CLICK:', page.url());
+
+  console.log(
+    'TOKEN AFTER:',
+    await page.evaluate(() => localStorage.getItem('token'))
+  );
+  // await page.getByRole('button', { name: 'Complete Registration' }).click();
   // await page.getByRole('button', { name: 'Complete Registration' }).click();
 
   console.log('URL after registration:', page.url());
