@@ -85,6 +85,7 @@ pipeline {
                     reuseNode true
                 }
             }
+            //
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     withSonarQubeEnv('SonarQube') {
