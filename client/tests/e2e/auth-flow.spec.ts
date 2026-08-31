@@ -4,7 +4,7 @@ test('register, login and access the catalog flow', async ({ page }) => {
   const uniqueId = `${Date.now()}`;
   const username = `e2e${uniqueId}`;
   const email = `e2e${uniqueId}@example.com`;
-  const password = 'pass1234';
+  const password = 'Pass1234';
 
   await page.goto('/register');
   await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible();
