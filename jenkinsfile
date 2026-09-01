@@ -216,7 +216,6 @@ pipeline {
         exit 1
     '''
             }
-
         }
 
         stage('Browser E2E tests') {
@@ -242,15 +241,20 @@ pipeline {
             post {
                 always {
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'client/playwright-report/**,client/test-results/**', fingerprint: true
-                    sh '''
-                       ${COMPOSE} down --remove-orphans
-                       ${COMPOSE} ps
-                       echo "E2E tests finished. Stopping the application stack to pass to Deployement"
-                    '''
                 }
             }
         }
+        stage('Stop application stack') {
+            agent any
 
+            steps {
+                sh '''
+                ${COMPOSE} down --remove-orphans
+                ${COMPOSE} ps
+                echo "E2E tests finished. Stopping the application stack to pass to Deployment"
+            '''
+            }
+        }
         stage('Debug Env') {
             steps {
                 sh 'echo "BRANCH_NAME: ${BRANCH_NAME}"'
@@ -287,8 +291,8 @@ pipeline {
                 '''
             }
         }
-    }   
-    // test 
+    }
+    // test
     //trigger
     post {
         always {
