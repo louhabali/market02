@@ -128,6 +128,21 @@ export class ClientDashboardComponent implements OnInit {
     });
   }
 
+  deleteOrder(orderId: string): void {
+    if (!confirm('Are you sure you want to permanently delete this order record?')) return;
+    this.orderService.deleteOrder(orderId).subscribe({
+      next: () => {
+        this.uiMessageType = 'success';
+        this.uiMessage = 'Order record deleted successfully.';
+        this.fetchOrders();
+      },
+      error: (err) => {
+        this.uiMessageType = 'error';
+        this.uiMessage = err?.error?.message || 'Could not delete order record';
+      }
+    });
+  }
+
   redoOrder(order: Order): void {
     order.items?.forEach(item => {
       this.cartService.addToCart({

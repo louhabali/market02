@@ -240,4 +240,11 @@ public class OrderService {
         order.setUpdatedAt(Instant.now());
         return orderRepository.save(order);
     }
+    public void deleteOrder(String orderId, String customerId) {
+        Order order = getOrderById(orderId);
+        if (!order.getCustomerId().equals(customerId)) {
+            throw new IllegalArgumentException("You can only delete your own orders");
+        }
+        orderRepository.delete(order);
+    }
 }
