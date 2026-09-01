@@ -216,7 +216,6 @@ pipeline {
         exit 1
     '''
             }
-
         }
 
         stage('Browser E2E tests') {
@@ -242,10 +241,9 @@ pipeline {
             post {
                 always {
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'client/playwright-report/**,client/test-results/**', fingerprint: true
-                }
-                failure {
                     sh '''
                        ${COMPOSE} down --remove-orphans
+                       ${COMPOSE} ps
                        echo "E2E tests failed. Stopping the application stack."
                     '''
                 }
@@ -263,9 +261,9 @@ pipeline {
             when {
                 allOf {
                     anyOf {
-                        branch 'safe-merge-cart-service'
-                        environment name: 'CHANGE_TARGET', value: 'safe-merge-cart-service'
-                        expression { env.GIT_BRANCH?.endsWith('safe-merge-cart-service') }
+                        branch 'main'
+                        environment name: 'CHANGE_TARGET', value: 'main'
+                        expression { env.GIT_BRANCH?.endsWith('main') }
                     }
 
                     // Never deploy from a scheduled SonarQube scan.
