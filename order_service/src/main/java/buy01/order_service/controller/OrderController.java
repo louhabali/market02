@@ -79,4 +79,12 @@ public class OrderController {
             @RequestHeader("X-User-Id") String customerId) {
         return ResponseEntity.ok(orderService.cancelOrder(orderId, customerId));
     }
+
+    @DeleteMapping("/{orderId}")
+    public ResponseEntity<Void> deleteOrder(
+            @PathVariable String orderId,
+            @RequestHeader("X-User-Id") String customerId) {
+        orderService.deleteOrder(orderId, customerId);
+        return ResponseEntity.noContent().build();
+    }
 }
