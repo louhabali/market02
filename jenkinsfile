@@ -292,6 +292,7 @@ pipeline {
         always {
             sh 'rm -f .env'
         }
+        // test pull request
         success {
             script {
                 def isTimerTrigger = currentBuild.buildCauses.any { cause ->
