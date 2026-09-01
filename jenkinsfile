@@ -287,8 +287,8 @@ pipeline {
                 '''
             }
         }
-    }
-
+    }   
+    // test 
     post {
         always {
             sh 'rm -f .env'
