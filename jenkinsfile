@@ -229,7 +229,6 @@ pipeline {
             environment {
                 PLAYWRIGHT_BASE_URL = 'https://frontend:8443'
             }
-            //push
             steps {
                 sh '''
                     set -e
@@ -242,15 +241,18 @@ pipeline {
             post {
                 always {
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'client/playwright-report/**,client/test-results/**', fingerprint: true
-                    sh '''
-                       ${COMPOSE} down --remove-orphans
-                       ${COMPOSE} ps
-                       echo "E2E tests failed. Stopping the application stack."
-                    '''
                 }
             }
         }
-
+        stage('Stop application stack') {
+            steps {
+                sh '''
+                ${COMPOSE} down --remove-orphans
+                ${COMPOSE} ps
+                echo "E2E tests finished. Stopping the application stack to pass to Deployment"
+            '''
+            }
+        }
         stage('Debug Env') {
             steps {
                 sh 'echo "BRANCH_NAME: ${BRANCH_NAME}"'
@@ -288,12 +290,12 @@ pipeline {
             }
         }
     }
-
+    // test
+    //trigger
     post {
         always {
             sh 'rm -f .env'
         }
-        // test pull request
         success {
             script {
                 def isTimerTrigger = currentBuild.buildCauses.any { cause ->
