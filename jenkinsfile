@@ -234,7 +234,6 @@ pipeline {
                     set -e
                     cd client
                     npm ci --legacy-peer-deps --no-audit --no-fund
-                    npx playwright install --with-deps
                     PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" npx playwright test --config=playwright.config.ts --reporter=line
                 '''
             }
