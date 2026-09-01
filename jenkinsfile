@@ -245,8 +245,6 @@ pipeline {
             }
         }
         stage('Stop application stack') {
-            agent any
-
             steps {
                 sh '''
                 ${COMPOSE} down --remove-orphans
