@@ -289,6 +289,7 @@ pipeline {
         }
     }   
     // test 
+    //trigger
     post {
         always {
             sh 'rm -f .env'
