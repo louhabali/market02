@@ -229,6 +229,7 @@ pipeline {
             environment {
                 PLAYWRIGHT_BASE_URL = 'https://frontend:8443'
             }
+            //push
             steps {
                 sh '''
                     set -e
